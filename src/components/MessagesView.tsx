@@ -81,7 +81,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm1',
       name: 'Amina Bello',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Learner'
     },
     content: "Assalamu alaikum sisters! Has anyone started the new practical module on 'Confident Sales Conversations'? The section on objection handling is so detailed!",
@@ -93,7 +93,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm2',
       name: 'Fatima Adebayo',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Mentor'
     },
     content: "Waalaykumussalam Amina! Yes, I helped structure that course. Remember that an objection is never a rejection—it is simply a buyer asking for more evidence. Let me know if you want to practice mock pitches!",
@@ -105,7 +105,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm3',
       name: 'Hawa Keita',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Community Lead'
     },
     content: "I'd love to join a mock sales practice session too! Maybe we can organize a group huddle on Zoom this Friday?",
@@ -117,7 +117,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm4',
       name: 'Joy Namubiru',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Member'
     },
     content: "Good morning sisters! I am currently visiting the Kampala tech hub. If any sister is in town, let us grab a tea and talk shop!",
@@ -129,7 +129,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm3',
       name: 'Hawa Keita',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Community Lead'
     },
     content: "Joy! I wish I were in Kampala, I am in Accra right now. But let's definitely coordinate for our Saturday Bi-Weekly Standup. We have 12 sisters RSVP'd so far!",
@@ -141,7 +141,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm2',
       name: 'Fatima Adebayo',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Mentor'
     },
     content: "Hello everyone! I just updated our shared Google Drive with the automated pricing calculator template. It accounts for logistics, local taxation, and packaging overheads. Check it out!",
@@ -153,7 +153,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm1',
       name: 'Amina Bello',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Learner'
     },
     content: "Fatima, you are a lifesaver! I plugged in my apparel numbers and realized my net margins on our Ankara dresses were only 8%. After adjusting with your template, I raised it to 22% safely. Thank you so much!",
@@ -165,7 +165,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm1',
       name: 'Amina Bello',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Learner'
     },
     content: "Feeling a bit overwhelmed today sisters. The pressure of hitting our monthly cooperative delivery targets while handling my kids' exams is intense. Just wanted to vent in a safe place.",
@@ -177,7 +177,7 @@ const INITIAL_GROUP_MESSAGES: GroupMessage[] = [
     author: {
       id: 'm4',
       name: 'Joy Namubiru',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Member'
     },
     content: "We hear you, Amina. Please give yourself some grace. You are running a full enterprise AND raising a family. Both are full-time jobs. Take a 15-minute tea break and step away from the workbench. We support you!",
@@ -193,9 +193,9 @@ const MOCK_BLUEPRINTS = [
 ];
 
 const MOCK_PHOTOS = [
-  { name: 'artisan_weaving_workshop.jpg', size: '2.4 MB', type: 'image' as const, url: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg' },
-  { name: 'shea_butter_packaging.jpg', size: '1.8 MB', type: 'image' as const, url: '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg' },
-  { name: 'mombasa_export_logistics.jpg', size: '3.1 MB', type: 'image' as const, url: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg' }
+  { name: 'artisan_weaving_workshop.jpg', size: '2.4 MB', type: 'image' as const, url: '/images/african_women_tech_collaboration_1784664040784.jpg' },
+  { name: 'shea_butter_packaging.jpg', size: '1.8 MB', type: 'image' as const, url: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg' },
+  { name: 'mombasa_export_logistics.jpg', size: '3.1 MB', type: 'image' as const, url: '/images/african_women_tech_collaboration_1784664040784.jpg' }
 ];
 
 const QUICK_REPLIES = [
@@ -780,7 +780,7 @@ export function MessagesView({
     const youMember: Member = {
       id: currentUser.id,
       name: 'Sarah Jenkins',
-      avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       title: 'Aspiring Fashion Founder',
       city: 'Nairobi',
       rank: 'Learner',
@@ -859,7 +859,7 @@ export function MessagesView({
       author: {
         id: currentUser.id,
         name: 'Sarah Jenkins',
-        avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+        avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
         rank: 'Learner'
       },
       content: contentStr,
@@ -884,7 +884,7 @@ export function MessagesView({
     const activeSistersInCircle = allMembers.filter(m => circleInfo.members.includes(m.id));
     const randomSister = activeSistersInCircle.length > 0 
       ? activeSistersInCircle[Math.floor(Math.random() * activeSistersInCircle.length)]
-      : { name: 'Amina Bello', avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg', id: 'm1', rank: 'Learner' };
+      : { name: 'Amina Bello', avatar: '/images/african_woman_portrait_2_1784708246407.jpg', id: 'm1', rank: 'Learner' };
 
     // Group reply simulator
     setIsCircleTyping(true);
@@ -1595,7 +1595,7 @@ export function MessagesView({
                     const isMe = msg.senderId === currentUser.id;
                     const status = isMe ? (messageStatuses[msg.id] || msg.status || 'read') : null;
                     const senderObj = isMe 
-                      ? { name: 'Sarah Jenkins', avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg' }
+                      ? { name: 'Sarah Jenkins', avatar: '/images/african_woman_portrait_2_1784708246407.jpg' }
                       : (activeConv.isGroup 
                           ? (allMembers.find(m => m.id === msg.senderId) || activeConv.member) 
                           : activeConv.member);

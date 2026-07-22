@@ -262,7 +262,7 @@ export function MentorshipView({
         selectedMentor = {
           id: `virtual-pool-${Date.now()}`,
           name: 'BIG Mombasa Mentor Pool',
-          avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+          avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
           title: 'Auto-Matched Mentor Specialist',
           city: 'Mombasa',
           rank: 'Mentor',

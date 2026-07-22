@@ -592,7 +592,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
               <div className="lg:col-span-5 relative">
                 <div className="aspect-[4/3] rounded-3xl overflow-hidden bg-slate-800 border border-white/10 shadow-2xl relative group">
                   <img 
-                    src="/src/assets/images/african_woman_learning_laptop_1784664067278.jpg" 
+                    src="/images/african_woman_learning_laptop_1784664067278.jpg" 
                     alt="African Women Learning" 
                     className="h-full w-full object-cover opacity-80" 
                     referrerPolicy="no-referrer"
@@ -916,7 +916,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
                   role: "Mentor",
                   experience: "12+ Years Experience",
                   expertise: "Business Architecture & Operations",
-                  avatar: "/src/assets/images/african_woman_portrait_2_1784708246407.jpg",
+                  avatar: "/images/african_woman_portrait_2_1784708246407.jpg",
                   bio: "Experienced entrepreneur and designer helping women launch sustainable ventures with practical operational plans."
                 },
                 {
@@ -924,7 +924,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
                   role: "Member Practitioner",
                   experience: "8+ Years Experience",
                   expertise: "SEO Content Architecture & Funnels",
-                  avatar: "/src/assets/images/african_woman_portrait_1_1784708232425.jpg",
+                  avatar: "/images/african_woman_portrait_1_1784708232425.jpg",
                   bio: "Growth marketer and search optimization specialist dedicated to helping female entrepreneurs establish organic digital pull."
                 },
                 {
@@ -932,7 +932,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
                   role: "Coach",
                   experience: "15+ Years Experience",
                   expertise: "Unit Economics & Sovereign Credit",
-                  avatar: "/src/assets/images/african_woman_portrait_3_1784708258772.jpg",
+                  avatar: "/images/african_woman_portrait_3_1784708258772.jpg",
                   bio: "Doctoral researcher and capital advisor training founders to build sovereign balance sheets and secure growth funding."
                 }
               ].map((mentor, idx) => (

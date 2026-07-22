@@ -43,7 +43,7 @@ const ORGANIZER_INFO: Record<string, {
   e1: {
     name: 'Wanjiku Kamau',
     role: 'Principal, Cooperative Impact Kenya',
-    avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
     bio: 'Wanjiku is a cooperative finance veteran with 15+ years helping rural and urban business collectives establish secure capital reservoirs across East Africa.',
     contact: 'wanjiku@coopimpact.ke',
     topics: ['Group Sinking Funds', 'Cooperative Registration Act', 'Seed Equity Preservation'],
@@ -57,7 +57,7 @@ const ORGANIZER_INFO: Record<string, {
   e2: {
     name: 'Fatma Juma',
     role: 'Founder, Nyali Voicing Lab',
-    avatar: '/src/assets/images/african_woman_portrait_3_1784708258772.jpg',
+    avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
     bio: 'Fatma is a performance coach, mental wellbeing researcher, and speech therapist dedicated to elevating the voices of pioneering female founders.',
     contact: 'fatma@nyalivoice.org',
     topics: ['Assertive Speech Loops', 'Overcoming Imposter Echoes', 'Mutual Mastermind Trust'],
@@ -71,7 +71,7 @@ const ORGANIZER_INFO: Record<string, {
   e3: {
     name: 'Dr. Amina Osei',
     role: 'Director of Trade, AfCFTA Advisory Group',
-    avatar: '/src/assets/images/african_woman_portrait_4_1784708270262.jpg',
+    avatar: '/images/african_woman_portrait_4_1784708270262.jpg',
     bio: 'Dr. Amina advises continental logistics hubs and ministries of commerce on tariff structures, border logistics, and single-currency payment gateways.',
     contact: 'amina.osei@afcfta-advisory.org',
     topics: ['Customs Declarations', 'East Africa Tariff Exemptions', 'Multicurrency Mobile Pay'],
@@ -85,7 +85,7 @@ const ORGANIZER_INFO: Record<string, {
   e4: {
     name: 'Sienna Nandi',
     role: 'Lead Healing Therapist, Sienna Retreats',
-    avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
     bio: 'Sienna has practiced therapeutic counseling and mindfulness coaching for over a decade, specializing in burnout restoration for high-impact leaders.',
     contact: 'sienna@siennasanctuary.com',
     topics: ['Mindful Somatic Grounding', 'Restorative Boundary Mapping', 'Therapeutic Group Circles'],
@@ -98,7 +98,7 @@ const ORGANIZER_INFO: Record<string, {
   e5: {
     name: 'Grace Mutua',
     role: 'Head of Sourcing, Retail Launchpad Lab',
-    avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
     bio: 'Grace is an industrial designer and supply chain architect who has guided hundreds of consumer product brands from small garages to major supermarket shelves.',
     contact: 'grace.mutua@launchpadlab.com',
     topics: ['Shelf-Ready Packaging Standards', 'Sourcing Ethics & Local Supply', 'UPC Barcodes & Scaling'],
@@ -114,7 +114,7 @@ const ORGANIZER_INFO: Record<string, {
 const DEFAULT_ORGANIZER = {
   name: 'BIG Experience Team',
   role: 'Community Lead, BIG Sisterhood Hub',
-  avatar: '/src/assets/images/african_woman_portrait_4_1784708270262.jpg',
+  avatar: '/images/african_woman_portrait_4_1784708270262.jpg',
   bio: 'The core experience design team at Be Independent Gal, committed to creating secure, empowering spaces for women across Africa to rise collectively.',
   contact: 'hello@beindependentgal.com',
   topics: ['Growth Accelerators', 'Peer Mentoring Circles', 'Emotional Resilience'],

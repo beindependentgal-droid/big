@@ -93,7 +93,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: DollarSign,
       title: "Financial Independence",
       desc: "Build better money habits, understand cash flow templates, and establish independent wealth channels.",
-      cover: "/src/assets/images/african_women_tech_collaboration_1784664040784.jpg",
+      cover: "/images/african_women_tech_collaboration_1784664040784.jpg",
       members: "1,240 Sisters",
       topics: ["Wealth Plans", "Budgeting", "Sovereign Credit"],
       color: "border-emerald-500/20 bg-emerald-500/5 text-emerald-700"
@@ -102,7 +102,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: Briefcase,
       title: "Career Women",
       desc: "Unlock structural career growth, corporate ladder guidance, interview readiness, and negotiation skills.",
-      cover: "/src/assets/images/african_women_tech_collaboration_1784664040784.jpg",
+      cover: "/images/african_women_tech_collaboration_1784664040784.jpg",
       members: "980 Sisters",
       topics: ["Negotiations", "CV Design", "Public Speaking"],
       color: "border-indigo-500/20 bg-indigo-500/5 text-indigo-700"
@@ -111,7 +111,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: TrendingUp,
       title: "Women Entrepreneurs",
       desc: "Plan, register, coordinate, and scale female-led companies through peer blueprints and match funding.",
-      cover: "/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg",
+      cover: "/images/african_woman_entrepreneur_portrait_1784664054544.jpg",
       members: "1,550 Sisters",
       topics: ["LLC Launch", "Customer Acquisition", "Pitch Decks"],
       color: "border-rose-500/20 bg-rose-500/5 text-rose-700"
@@ -120,7 +120,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: Heart,
       title: "Wellness Circle",
       desc: "Prioritize mental clarity, emotional boundaries, confidence builders, and physical wellness tracking.",
-      cover: "/src/assets/images/african_women_community_circle_1784704135356.jpg",
+      cover: "/images/african_women_community_circle_1784704135356.jpg",
       members: "850 Sisters",
       topics: ["Mindfulness", "Stress Management", "Healthy Routines"],
       color: "border-pink-500/20 bg-pink-500/5 text-pink-700"
@@ -129,7 +129,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: GraduationCap,
       title: "Students & Graduates",
       desc: "Transition smoothly from university lectures straight into specialized, sovereign career execution.",
-      cover: "/src/assets/images/african_women_mentorship_discussion_1784664078314.jpg",
+      cover: "/images/african_women_mentorship_discussion_1784664078314.jpg",
       members: "720 Sisters",
       topics: ["Internships", "Skill Building", "First Retainers"],
       color: "border-amber-500/20 bg-amber-500/5 text-amber-700"
@@ -138,7 +138,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: Laptop,
       title: "Women in Tech",
       desc: "Accelerate tech literacy, software engineering frameworks, AI leverages, and design collaboration.",
-      cover: "/src/assets/images/african_woman_leading_masterclass_1784704151649.jpg",
+      cover: "/images/african_woman_leading_masterclass_1784704151649.jpg",
       members: "1,120 Sisters",
       topics: ["Tech Portfolio", "AI Prompting", "Design Engineering"],
       color: "border-cyan-500/20 bg-cyan-500/5 text-cyan-700"
@@ -147,7 +147,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: Baby,
       title: "Mothers Circle",
       desc: "Anchor your motherhood journey in supportive environments, sharing tips on work-life synergy.",
-      cover: "/src/assets/images/african_mother_and_child_wellness_1784704199174.jpg",
+      cover: "/images/african_mother_and_child_wellness_1784704199174.jpg",
       members: "640 Sisters",
       topics: ["Synergy Plans", "Parenting Guides", "Self Care"],
       color: "border-teal-500/20 bg-teal-500/5 text-teal-700"
@@ -156,7 +156,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       icon: Globe,
       title: "Diaspora Women",
       desc: "Connect back home while optimizing global opportunities. Network with African women globally.",
-      cover: "/src/assets/images/african_women_community_circle_1784704135356.jpg",
+      cover: "/images/african_women_community_circle_1784704135356.jpg",
       members: "910 Sisters",
       topics: ["Cross-Border Trade", "Global Network", "Alumni Circles"],
       color: "border-purple-500/20 bg-purple-500/5 text-purple-700"
@@ -283,21 +283,21 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
       profession: "UI/UX Designer",
       location: "Accra, Ghana",
       bio: "Crafting beautiful, inclusive digital workspaces. Leading design sprints in the Tech Circle.",
-      avatar: "/src/assets/images/african_woman_portrait_2_1784708246407.jpg"
+      avatar: "/images/african_woman_portrait_2_1784708246407.jpg"
     },
     {
       name: "Sienna N.",
       profession: "E-Commerce Founder",
       location: "Cape Town, SA",
       bio: "Sovereign merchant scaling direct-to-consumer apparel. Active in the Entrepreneurs Circle.",
-      avatar: "/src/assets/images/african_woman_portrait_1_1784708232425.jpg"
+      avatar: "/images/african_woman_portrait_1_1784708232425.jpg"
     },
     {
       name: "Wanjiku K.",
       profession: "Growth Marketer",
       location: "Nairobi, Kenya",
       bio: "Helping brands rank organically on search results. Facilitating live copywriting reviews.",
-      avatar: "/src/assets/images/african_woman_portrait_4_1784708270262.jpg"
+      avatar: "/images/african_woman_portrait_4_1784708270262.jpg"
     }
   ];
 
@@ -432,7 +432,7 @@ export function CirclesMarketingView({ setCurrentView, isAuthenticated = false }
             <div className="lg:col-span-5 relative mt-8 lg:mt-0">
               <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden bg-slate-800 border border-white/10 shadow-2xl relative group">
                 <img 
-                  src="/src/assets/images/african_women_tech_collaboration_1784664040784.jpg" 
+                  src="/images/african_women_tech_collaboration_1784664040784.jpg" 
                   alt="African Women Networking" 
                   className="h-full w-full object-cover opacity-85 transition-transform duration-700 group-hover:scale-105" 
                   referrerPolicy="no-referrer"

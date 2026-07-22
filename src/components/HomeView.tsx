@@ -23,19 +23,19 @@ interface HomeViewProps {
 
 const slides = [
   {
-    image: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    image: '/images/african_women_tech_collaboration_1784664040784.jpg',
     alt: 'Diverse African women collaborating in a modern tech office',
     title: 'Be Independent.',
     subtitle: 'Be Unstoppable.'
   },
   {
-    image: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+    image: '/images/african_women_community_circle_1784704135356.jpg',
     alt: 'African women supporting one another in an uplifting community setting',
     title: 'Rising Together,',
     subtitle: 'Every Single Day.'
   },
   {
-    image: '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
+    image: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
     alt: 'Confident African woman entrepreneur in her workspace',
     title: 'Unlock Your Vision.',
     subtitle: 'Build Your Business.'
@@ -108,32 +108,32 @@ const pillars = [
 
 const communityPosts = [
   {
-    image: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+    image: '/images/african_women_community_circle_1784704135356.jpg',
     title: 'Real conversations, raw support',
     desc: 'Women showing up for one another in circles shaped by vulnerability, confidentiality, and deep care.',
   },
   {
-    image: '/src/assets/images/african_women_mentorship_discussion_1784664078314.jpg',
+    image: '/images/african_women_mentorship_discussion_1784664078314.jpg',
     title: 'Mentorship that moves things',
     desc: 'Experienced industry leaders guiding younger sisters with complete clarity, strategy, and heart.',
   },
   {
-    image: '/src/assets/images/african_woman_leading_masterclass_1784704151649.jpg',
+    image: '/images/african_woman_leading_masterclass_1784704151649.jpg',
     title: 'Moments that spark momentum',
     desc: 'Immersive regional meetups that turn abstract ideas into community cooperatives and live opportunities.',
   },
   {
-    image: '/src/assets/images/african_mother_and_child_wellness_1784704199174.jpg',
+    image: '/images/african_mother_and_child_wellness_1784704199174.jpg',
     title: 'Annual retreats of sisterhood',
     desc: 'Restorative weekend gatherings that refresh purpose, creative energy, and spiritual focus in pristine settings.',
   },
   {
-    image: '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
+    image: '/images/african_woman_learning_laptop_1784664067278.jpg',
     title: 'Practical localized masterclasses',
     desc: 'Hands-on training, interactive circles, and expert guidance built to move from ideation to execution.',
   },
   {
-    image: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    image: '/images/african_women_tech_collaboration_1784664040784.jpg',
     title: 'Ecosystems of financial autonomy',
     desc: 'A robust collaborative network designed for partnership, mutual investment, and cooperative growth.',
   }
@@ -291,7 +291,7 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
           <div className="relative">
             <div className="overflow-hidden rounded-3xl shadow-xl border border-slate-100 dark:border-slate-800">
               <img referrerPolicy="no-referrer" loading="lazy" decoding="async"
-                src="/src/assets/images/african_women_mentorship_discussion_1784664078314.jpg"
+                src="/images/african_women_mentorship_discussion_1784664078314.jpg"
                 alt="Ambitious Women in Business Circle"
                 className="w-full object-cover aspect-[4/3] max-h-[350px] sm:max-h-none"
               />
@@ -536,7 +536,7 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
             <div className="relative">
               <div className="relative rounded-[3rem] overflow-hidden shadow-2xl border-4 border-white dark:border-slate-800">
                 <img referrerPolicy="no-referrer" loading="lazy" decoding="async" 
-                  src="/src/assets/images/african_woman_learning_laptop_1784664067278.jpg" 
+                  src="/images/african_woman_learning_laptop_1784664067278.jpg" 
                   alt="Academy students collaborating"
                   className="w-full aspect-[4/5] object-cover"
                 />

@@ -599,11 +599,11 @@ export function AdminDashboardView({
     if (!newMember.name || !newMember.title) return;
 
     const randomAvatar = [
-      '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
-      '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
-      '/src/assets/images/african_woman_portrait_3_1784708258772.jpg',
-      '/src/assets/images/african_woman_portrait_4_1784708270262.jpg',
-      '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg'
+      '/images/african_woman_portrait_1_1784708232425.jpg',
+      '/images/african_woman_portrait_2_1784708246407.jpg',
+      '/images/african_woman_portrait_3_1784708258772.jpg',
+      '/images/african_woman_portrait_4_1784708270262.jpg',
+      '/images/african_woman_entrepreneur_portrait_1784664054544.jpg'
     ][Math.floor(Math.random() * 5)];
 
     const generatedId = `member-custom-${Date.now()}`;
@@ -881,7 +881,7 @@ export function AdminDashboardView({
       description: request.description,
       category: request.category as any,
       memberCount: 1,
-      image: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+      image: '/images/african_women_community_circle_1784704135356.jpg',
       createdBy: request.userId,
       isJoined: true,
       moderators: [request.userId],
@@ -2918,7 +2918,7 @@ export function AdminDashboardView({
                             <div className="flex items-start justify-between">
                               <div className="flex items-center gap-3">
                                 <img
-                                  src={post.author.avatar || '/src/assets/images/african_woman_portrait_1_1784708232425.jpg'}
+                                  src={post.author.avatar || '/images/african_woman_portrait_1_1784708232425.jpg'}
                                   alt={post.author.name}
                                   className="h-10 w-10 rounded-full object-cover border border-slate-200"
                                 />
@@ -3056,7 +3056,7 @@ export function AdminDashboardView({
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
                             <img 
-                              src={member.avatar || '/src/assets/images/african_woman_portrait_3_1784708258772.jpg'} 
+                              src={member.avatar || '/images/african_woman_portrait_3_1784708258772.jpg'} 
                               alt={member.name} 
                               className="h-10 w-10 rounded-full object-cover border-2 border-slate-100"
                             />

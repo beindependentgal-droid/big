@@ -526,7 +526,7 @@ export default function App() {
         const defaultYou: Member = {
           id: currentUserId,
           name: 'Sarah Jenkins',
-          avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+          avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
           title: 'Aspiring Fashion Founder',
           city: 'Nairobi',
           rank: 'Learner',
@@ -620,7 +620,7 @@ export default function App() {
     ...(foundYou || {
       id: currentUserId,
       name: 'Sarah Jenkins',
-      avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       title: 'Aspiring Fashion Founder',
       city: 'Nairobi',
       rank: 'Learner',

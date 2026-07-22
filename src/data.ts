@@ -261,7 +261,7 @@ export const INITIAL_MEMBERS: Member[] = [
   {
     id: 'm1',
     name: 'Fatma J.',
-    avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
     title: 'Fashion Designer',
     city: 'Nairobi',
     rank: 'Mentor',
@@ -277,7 +277,7 @@ export const INITIAL_MEMBERS: Member[] = [
   {
     id: 'm2',
     name: 'Sienna N.',
-    avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+    avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
     title: 'Founder, EcoStyles',
     city: 'Cape Town',
     rank: 'Connector',
@@ -293,7 +293,7 @@ export const INITIAL_MEMBERS: Member[] = [
   {
     id: 'm3',
     name: 'Dr. Amina',
-    avatar: '/src/assets/images/african_woman_portrait_3_1784708258772.jpg',
+    avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
     title: 'Tech Strategist',
     city: 'Lagos',
     rank: 'Coach',
@@ -309,7 +309,7 @@ export const INITIAL_MEMBERS: Member[] = [
   {
     id: 'm4',
     name: 'Wanjiku K.',
-    avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
     title: 'Marketing Specialist',
     city: 'Nairobi',
     rank: 'Member',
@@ -325,7 +325,7 @@ export const INITIAL_MEMBERS: Member[] = [
   {
     id: 'm5',
     name: 'Grace M.',
-    avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+    avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
     title: 'UI/UX Designer',
     city: 'Accra',
     rank: 'Connector',
@@ -397,8 +397,8 @@ export const INITIAL_STORIES: Story[] = [
     id: 's1',
     userId: 'm1',
     userName: 'Fatma J.',
-    userAvatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
-    imageUrl: '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
+    userAvatar: '/images/african_woman_portrait_1_1784708232425.jpg',
+    imageUrl: '/images/african_woman_learning_laptop_1784664067278.jpg',
     timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
     privacy: 'public',
     viewers: []
@@ -407,8 +407,8 @@ export const INITIAL_STORIES: Story[] = [
     id: 's2',
     userId: 'm2',
     userName: 'Sienna N.',
-    userAvatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
-    imageUrl: '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
+    userAvatar: '/images/african_woman_portrait_2_1784708246407.jpg',
+    imageUrl: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
     timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     privacy: 'public',
     viewers: []
@@ -417,8 +417,8 @@ export const INITIAL_STORIES: Story[] = [
     id: 's3',
     userId: 'm3',
     userName: 'Dr. Amina',
-    userAvatar: '/src/assets/images/african_woman_portrait_3_1784708258772.jpg',
-    imageUrl: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    userAvatar: '/images/african_woman_portrait_3_1784708258772.jpg',
+    imageUrl: '/images/african_women_tech_collaboration_1784664040784.jpg',
     timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
     privacy: 'public',
     viewers: []
@@ -432,7 +432,7 @@ export const INITIAL_CIRCLES: Circle[] = [
     name: 'Tech Innovators',
     description: 'A community for women in technology to share ideas, network, and grow together.',
     memberCount: 1250,
-    image: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    image: '/images/african_women_tech_collaboration_1784664040784.jpg',
     category: 'connect',
     isJoined: true,
     permissions: {
@@ -446,7 +446,7 @@ export const INITIAL_CIRCLES: Circle[] = [
     name: 'Freelance & Earn',
     description: 'Discuss freelancing opportunities, tips for negotiating rates, and finding high-paying clients.',
     memberCount: 840,
-    image: '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
+    image: '/images/african_woman_learning_laptop_1784664067278.jpg',
     category: 'earn',
     isJoined: false,
     permissions: {
@@ -460,7 +460,7 @@ export const INITIAL_CIRCLES: Circle[] = [
     name: 'Mindfulness & Wellness',
     description: 'A safe space to discuss mental health, self-care routines, and overall well-being.',
     memberCount: 3200,
-    image: '/src/assets/images/african_women_mentorship_discussion_1784664078314.jpg',
+    image: '/images/african_women_mentorship_discussion_1784664078314.jpg',
     category: 'thrive',
     isJoined: true,
     permissions: {
@@ -474,7 +474,7 @@ export const INITIAL_CIRCLES: Circle[] = [
     name: 'Startup Founders',
     description: 'Connect with other women founders, share startup journey experiences, and find potential co-founders or investors.',
     memberCount: 560,
-    image: '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
+    image: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
     category: 'connect',
     isJoined: false,
     permissions: {
@@ -488,7 +488,7 @@ export const INITIAL_CIRCLES: Circle[] = [
     name: 'Creative Writers',
     description: 'For aspiring and professional writers to share works in progress, get feedback, and discuss publishing.',
     memberCount: 1100,
-    image: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+    image: '/images/african_women_community_circle_1784704135356.jpg',
     category: 'learn',
     isJoined: true,
     permissions: {
@@ -507,14 +507,14 @@ export const INITIAL_COURSES: Course[] = [
     description: 'Master the essential building blocks of launching a sustainable, legal, and profitable enterprise from scratch.',
     instructor: {
       name: 'Fatma J.',
-      avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Mentor',
       bio: 'Experienced entrepreneur and designer helping women launch sustainable ventures with practical operational plans.'
     },
     duration: '4 Hours',
     category: 'leadership',
     level: 'Beginner',
-    thumbnail: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    thumbnail: '/images/african_women_tech_collaboration_1784664040784.jpg',
     points: 200,
     students: 1850,
     rating: 4.9,
@@ -588,14 +588,14 @@ export const INITIAL_COURSES: Course[] = [
     description: 'Learn the core concepts of content strategy, search engine optimization, and building a high-converting digital acquisition funnel.',
     instructor: {
       name: 'Wanjiku K.',
-      avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Member',
       bio: 'Growth marketer and search optimization specialist dedicated to helping female entrepreneurs establish organic digital pull.'
     },
     duration: '5 Hours',
     category: 'marketing',
     level: 'Beginner',
-    thumbnail: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+    thumbnail: '/images/african_women_community_circle_1784704135356.jpg',
     points: 250,
     students: 2400,
     rating: 4.8,
@@ -669,14 +669,14 @@ export const INITIAL_COURSES: Course[] = [
     description: 'Take command of your company numbers, cash flow forecasting, unit economics, and building healthy personal credit profiles.',
     instructor: {
       name: 'Dr. Amina',
-      avatar: '/src/assets/images/african_woman_portrait_3_1784708258772.jpg',
+      avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
       rank: 'Coach',
       bio: 'Doctoral researcher and capital advisor training founders to build sovereign balance sheets and secure growth funding.'
     },
     duration: '6 Hours',
     category: 'finance',
     level: 'Beginner',
-    thumbnail: '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
+    thumbnail: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
     points: 300,
     students: 3100,
     rating: 4.9,
@@ -750,14 +750,14 @@ export const INITIAL_COURSES: Course[] = [
     description: 'Build fully functional web and mobile applications without writing a single line of code using modern visual platforms.',
     instructor: {
       name: 'Sarah K.',
-      avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Developer',
       bio: 'Software engineer and no-code champion helping non-technical founders launch products in weeks, not months.'
     },
     duration: '7 Hours',
     category: 'tech',
     level: 'Intermediate',
-    thumbnail: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    thumbnail: '/images/african_women_tech_collaboration_1784664040784.jpg',
     points: 350,
     students: 1200,
     rating: 4.9,
@@ -831,14 +831,14 @@ export const INITIAL_COURSES: Course[] = [
     description: 'Elevate your leadership presence, master critical negotiation, handle difficult conversations, and design high-performing cultures.',
     instructor: {
       name: 'Nneka A.',
-      avatar: '/src/assets/images/african_woman_portrait_4_1784708270262.jpg',
+      avatar: '/images/african_woman_portrait_4_1784708270262.jpg',
       rank: 'Advisor',
       bio: 'Executive coach and retired Fortune 500 director training the next generation of sovereign female corporate leaders.'
     },
     duration: '5 Hours',
     category: 'leadership',
     level: 'Advanced',
-    thumbnail: '/src/assets/images/african_woman_leading_masterclass_1784704151649.jpg',
+    thumbnail: '/images/african_woman_leading_masterclass_1784704151649.jpg',
     points: 300,
     students: 950,
     rating: 4.9,
@@ -896,14 +896,14 @@ export const INITIAL_COURSES: Course[] = [
     description: 'Establish an unforgettable brand identity, craft compelling brand stories, and design high-impact visuals that resonate deeply.',
     instructor: {
       name: 'Maya A.',
-      avatar: '/src/assets/images/african_woman_portrait_4_1784708270262.jpg',
+      avatar: '/images/african_woman_portrait_4_1784708270262.jpg',
       rank: 'Designer',
       bio: 'Award-winning creative director guiding startups on brand positioning, aesthetic continuity, and storytelling.'
     },
     duration: '3.5 Hours',
     category: 'creative',
     level: 'Intermediate',
-    thumbnail: '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
+    thumbnail: '/images/african_woman_learning_laptop_1784664067278.jpg',
     points: 200,
     students: 1400,
     rating: 4.7,
@@ -1085,7 +1085,7 @@ export interface ImpactStory {
 export const INITIAL_CAMPAIGNS: Campaign[] = [
   {
     id: 'camp-1',
-    coverImage: '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
+    coverImage: '/images/african_woman_learning_laptop_1784664067278.jpg',
     title: 'Support BIG Academy Scholarships',
     shortDescription: 'Provide full tuition, laptops, and transport stipends for 20 brilliant young women from under-resourced communities to join the next cohort.',
     story: 'Education is the ultimate foundation of economic sovereignty. The BIG Academy has trained over 500 women in digital design, software development, and technical business operations. This scholarship campaign directly sponsors the tuition and equipment costs for our upcoming Cohort 7, bringing 20 highly motivated girls into our 6-month intensive training program.',
@@ -1114,13 +1114,13 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
       { date: 'June 28, 2026', title: 'Curriculum Overhaul Complete', content: 'Our design and technology curriculum has been updated with advanced generative AI and cloud deployment modules to ensure high marketability.' }
     ],
     gallery: [
-      '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
-      '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg'
+      '/images/african_woman_learning_laptop_1784664067278.jpg',
+      '/images/african_women_tech_collaboration_1784664040784.jpg'
     ]
   },
   {
     id: 'camp-2',
-    coverImage: '/src/assets/images/african_women_mentorship_discussion_1784664078314.jpg',
+    coverImage: '/images/african_women_mentorship_discussion_1784664078314.jpg',
     title: 'Sponsor Leadership Bootcamp',
     shortDescription: 'Fund our biannual residential leadership bootcamp empowering 35 grassroots community organizers with advocacy, public speaking, and project governance skills.',
     story: 'True leadership happens in the community. Our 4-day intensive Leadership Bootcamp brings together selected grassroots leaders to learn policy analysis, strategic communication, and community organizing principles from master executive coaches.',
@@ -1147,12 +1147,12 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
       { date: 'July 19, 2026', title: 'Host Venue Selected', content: 'We have locked in a beautiful eco-lodge facility that has agreed to provide substantial discounts for accommodation.' }
     ],
     gallery: [
-      '/src/assets/images/african_women_community_circle_1784704135356.jpg'
+      '/images/african_women_community_circle_1784704135356.jpg'
     ]
   },
   {
     id: 'camp-3',
-    coverImage: '/src/assets/images/african_mother_and_child_wellness_1784704199174.jpg',
+    coverImage: '/images/african_mother_and_child_wellness_1784704199174.jpg',
     title: 'Community Mental Wellness Program',
     shortDescription: 'Provide mental health toolkits, professional therapy sessions, and group peer-counseling safe spaces for women recovering from occupational trauma.',
     story: 'Economic growth cannot happen without emotional resilience. The pressure of rebuilding lives and facing economic hardship takes a heavy toll. This fund sponsors clinical therapy sessions, group healing circles, and wellness journals for our members.',
@@ -1179,7 +1179,7 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
   },
   {
     id: 'camp-4',
-    coverImage: '/src/assets/images/african_women_tech_collaboration_1784664040784.jpg',
+    coverImage: '/images/african_women_tech_collaboration_1784664040784.jpg',
     title: 'Women in Tech Fund',
     shortDescription: 'Direct micro-grants for female tech founders to acquire hosting, servers, API keys, and specialized software licenses to ship their MVPs.',
     story: 'Many women in tech have high-fidelity designs and prototypes ready, but lack the capital to subscribe to cloud infrastructure or integrate real APIs. This fund gives small tech grants to build and host functional products.',
@@ -1208,7 +1208,7 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
   },
   {
     id: 'camp-5',
-    coverImage: '/src/assets/images/african_mother_and_child_wellness_1784704199174.jpg',
+    coverImage: '/images/african_mother_and_child_wellness_1784704199174.jpg',
     title: 'Single Mothers Empowerment Initiative',
     shortDescription: 'Provide flexible digital skills training, child-care stipends, and work-from-home starter equipment for 15 single mothers.',
     story: 'Single mothers face a dual challenge: working to support their family while caring for their children. This initiative establishes a digital micro-working incubator that provides on-site childcare while mothers receive specialized transcription and virtualization training.',
@@ -1234,7 +1234,7 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
   },
   {
     id: 'camp-6',
-    coverImage: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+    coverImage: '/images/african_women_community_circle_1784704135356.jpg',
     title: 'Annual BIG Summit',
     shortDescription: 'Fund travel stipends, local accommodation, and exhibition booths for 50 rural female entrepreneurs to attend the Annual BIG Summit.',
     story: 'The BIG Summit is our hallmark annual gathering of thousands of women across East Africa. It features pitches, exhibitions, training tracks, and elite mentorship. We want to ensure that geographical and financial constraints do not exclude rural founders.',
@@ -1260,7 +1260,7 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
   },
   {
     id: 'camp-7',
-    coverImage: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    coverImage: '/images/african_woman_portrait_1_1784708232425.jpg',
     title: 'Emergency Sister Support Fund',
     shortDescription: 'An active mutual-aid safety net providing immediate medical, housing, or business rehabilitation grants to sisters in acute crisis.',
     story: 'Life happens. Fire in the local market, sudden illness, or forced eviction can instantly wipe out a sister\'s business. This mutual aid emergency fund acts as an immediate insurance layer, approving quick rehabilitation grants within 24 hours of local circle referral.',
@@ -1286,7 +1286,7 @@ export const INITIAL_CAMPAIGNS: Campaign[] = [
   },
   {
     id: 'camp-8',
-    coverImage: '/src/assets/images/african_women_mentorship_discussion_1784664078314.jpg',
+    coverImage: '/images/african_women_mentorship_discussion_1784664078314.jpg',
     title: 'Mentorship Expansion Program',
     shortDescription: 'Expand our mentorship tracking software, host match-making physical mixers, and train 100 new senior professional mentors.',
     story: 'Sovereignty is built through connection. Our professional mentorship program pairs younger learners with corporate female executives. This fund supports training workshops, matching algorithms, and community resources to scale the mentor database.',
@@ -1386,7 +1386,7 @@ export const INITIAL_MONTHLY_SUPPORTERS: MonthlySupporter[] = [
     id: 'sup-1',
     userId: 'm3',
     name: 'Njeri Kamau',
-    avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
     amount: 10000,
     tier: 'Gold Champion',
     joinedAt: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1395,7 +1395,7 @@ export const INITIAL_MONTHLY_SUPPORTERS: MonthlySupporter[] = [
   {
     id: 'sup-2',
     name: 'Zainab O.',
-    avatar: '/src/assets/images/african_woman_portrait_2_1784708246407.jpg',
+    avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
     amount: 25000,
     tier: 'Platinum Champion',
     joinedAt: new Date(Date.now() - 500 * 24 * 60 * 60 * 1000).toISOString(),
@@ -1405,7 +1405,7 @@ export const INITIAL_MONTHLY_SUPPORTERS: MonthlySupporter[] = [
     id: 'sup-3',
     userId: 'm1',
     name: 'Amina Bello',
-    avatar: '/src/assets/images/african_woman_portrait_3_1784708258772.jpg',
+    avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
     amount: 2500,
     tier: 'Bronze Champion',
     joinedAt: '2026-05-20T14:30:00Z',
@@ -1414,7 +1414,7 @@ export const INITIAL_MONTHLY_SUPPORTERS: MonthlySupporter[] = [
   {
     id: 'sup-4',
     name: 'Wangari Maathai Club',
-    avatar: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+    avatar: '/images/african_women_community_circle_1784704135356.jpg',
     amount: 15000,
     tier: 'Platinum Champion',
     joinedAt: '2026-02-18T10:00:00Z',
@@ -1426,7 +1426,7 @@ export const INITIAL_IMPACT_STORIES: ImpactStory[] = [
   {
     id: 'story-1',
     title: 'From Street Vendor to certified Software QA Engineer: Mary\'s Story',
-    coverImage: '/src/assets/images/african_woman_learning_laptop_1784664067278.jpg',
+    coverImage: '/images/african_woman_learning_laptop_1784664067278.jpg',
     before: 'Mary was running a small, unstable fruit stall in Eldoret, struggling to feed her two children on KES 200 a day with zero savings or digital skills.',
     after: 'Supported by a full scholarship from the BIG Academy, Mary learned software testing, received a Chromebook, and is now working remotely as a Junior QA Analyst for a regional tech hub, earning KES 85,000 monthly.',
     quote: '"The day BIG handed me my laptop was the day I realized my life had changed forever. I am no longer just surviving; I am building a future."',
@@ -1442,7 +1442,7 @@ export const INITIAL_IMPACT_STORIES: ImpactStory[] = [
   {
     id: 'story-2',
     title: 'How Faith\'s Agro-Export startup matched cooperative capital to scale',
-    coverImage: '/src/assets/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
+    coverImage: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
     before: 'Faith had a brilliant business model connecting smallholder female avocado farmers with international logistics but lacked cold-room storage capital.',
     after: 'Using the matching grant, Faith raised KES 400,000 from local circles which BIG matched dollar-for-dollar. She purchased her first heavy-duty chiller, boosting farmer yield retainment by 80%.',
     quote: '"BIG Fund proved to my community that they were willing to put skin in the game. The matching pool turned our tiny village contributions into major physical infrastructure."',

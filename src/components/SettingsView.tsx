@@ -1330,7 +1330,7 @@ export function SettingsView({ currentUser, onSaveProfile, addPoints, triggerSim
                     >
                       <div className="flex justify-center">
                         <div className="relative">
-                          <img src={avatar || "/src/assets/images/african_woman_portrait_1_1784708232425.jpg"} className="h-20 w-20 rounded-full border-4 border-white shadow-xl object-cover" alt="Avatar" />
+                          <img src={avatar || "/images/african_woman_portrait_1_1784708232425.jpg"} className="h-20 w-20 rounded-full border-4 border-white shadow-xl object-cover" alt="Avatar" />
                           <span className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-pink-500 text-white border-2 border-white shadow-md">
                             <BadgeCheck className="h-4.5 w-4.5" />
                           </span>

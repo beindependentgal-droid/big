@@ -49,7 +49,7 @@ export function AboutView({ setCurrentView }: { setCurrentView: (view: string) =
     <div className="bg-white">
       <section className="relative min-h-[78vh] overflow-hidden sm:min-h-[86vh]">
         <img
-          src="/src/assets/images/african_women_community_circle_1784704135356.jpg"
+          src="/images/african_women_community_circle_1784704135356.jpg"
           alt="African women walking together, laughing, and learning as a community"
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -88,7 +88,7 @@ export function AboutView({ setCurrentView }: { setCurrentView: (view: string) =
           <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
             <div className="relative overflow-hidden rounded-[2rem] bg-slate-100 shadow-xl">
               <img
-                src="/src/assets/images/african_women_tech_collaboration_1784664040784.jpg"
+                src="/images/african_women_tech_collaboration_1784664040784.jpg"
                 alt="African women networking and learning together"
                 className="h-full w-full object-cover"
               />

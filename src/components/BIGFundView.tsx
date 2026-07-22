@@ -552,7 +552,7 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false, triggerSi
       const newSupporter: MonthlySupporter = {
         id: `sup-${Date.now()}`,
         name: payload.donorName,
-        avatar: '/src/assets/images/african_woman_portrait_1_1784708232425.jpg',
+        avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
         amount: payload.amount,
         tier: tierLabel,
         joinedAt: new Date().toISOString(),
@@ -652,7 +652,7 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false, triggerSi
 
     const newCamp: Campaign = {
       id: nextId,
-      coverImage: '/src/assets/images/african_women_community_circle_1784704135356.jpg',
+      coverImage: '/images/african_women_community_circle_1784704135356.jpg',
       title: newCampaignTitle,
       shortDescription: newCampaignShort,
       story: newCampaignStory || 'The Be Independent Gal community is initiating this project to support members in our circles. Real transparency, real resources, and real mentorship.',
@@ -1128,7 +1128,7 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false, triggerSi
               {/* Video Thumbnail placeholder */}
               <div className="w-full md:w-[320px] aspect-video rounded-[1.8rem] bg-slate-100 border border-slate-200 relative overflow-hidden flex items-center justify-center group shadow-md shrink-0">
                 <img 
-                  src="/src/assets/images/african_women_tech_collaboration_1784664040784.jpg" 
+                  src="/images/african_women_tech_collaboration_1784664040784.jpg" 
                   alt="Women working together"
                   className="absolute inset-0 object-cover opacity-60 group-hover:opacity-75 transition duration-300"
                 />
