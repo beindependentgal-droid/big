@@ -464,6 +464,36 @@
   ],
   "notifications": [
     {
+      "id": "not-sb-1784729416291",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784729415979",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784729414248",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784728843639",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784728843088",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784728839947",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
       "id": "not-sb-1784725984793",
       "title": "🎉 Connected successfully to your live Supabase database!",
       "read": false
@@ -930,36 +960,6 @@
     },
     {
       "id": "not-backend-1784712662897",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711784482",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711782541",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784711780603",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711620073",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711619745",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784711618187",
       "title": "⚡ Connected and synced with your live Express backend!",
       "read": false
     }

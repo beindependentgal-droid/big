@@ -60,11 +60,6 @@ export function LeftSidebar({ currentView, setCurrentView, unreadCount, mobileMe
 
   return (
     <>
-      {/* DESKTOP SIDEBAR */}
-      <aside className="hidden md:flex flex-col w-64 shrink-0 h-[calc(100vh-5rem)] sticky top-20 border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 overflow-y-auto">
-        {sidebarContent}
-      </aside>
-
       {/* MOBILE DRAWER */}
       <AnimatePresence>
         {mobileMenuOpen && (
