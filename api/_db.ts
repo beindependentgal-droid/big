@@ -24,7 +24,18 @@ import {
   ImpactStory
 } from "../src/data";
 
-const DB_FILE = path.join(process.cwd(), "api", "db.json");
+const LOCAL_DB_FILE = path.join(process.cwd(), "api", "_db.json");
+const TMP_DB_FILE = "/tmp/_db.json";
+
+function getActiveDbFilePath(): string {
+  if (fs.existsSync(TMP_DB_FILE)) {
+    return TMP_DB_FILE;
+  }
+  if (fs.existsSync(LOCAL_DB_FILE)) {
+    return LOCAL_DB_FILE;
+  }
+  return TMP_DB_FILE;
+}
 
 export interface ForumThread {
   id: string;
@@ -355,8 +366,9 @@ export const getInitialState = (): ApplicationState => {
 
 export const loadDb = (): ApplicationState => {
   try {
-    if (fs.existsSync(DB_FILE)) {
-      const raw = fs.readFileSync(DB_FILE, "utf-8");
+    const dbPath = getActiveDbFilePath();
+    if (fs.existsSync(dbPath)) {
+      const raw = fs.readFileSync(dbPath, "utf-8");
       const parsed = JSON.parse(raw);
       const defaults = getInitialState();
       
@@ -387,7 +399,7 @@ export const loadDb = (): ApplicationState => {
       };
 
       if (hashSeeded || !parsed.campaigns) {
-        fs.writeFileSync(DB_FILE, JSON.stringify(merged, null, 2), "utf-8");
+        fs.writeFileSync(dbPath, JSON.stringify(merged, null, 2), "utf-8");
       }
       return merged;
     }
@@ -417,7 +429,8 @@ export const loadDb = (): ApplicationState => {
 
 export const saveDb = (state: ApplicationState): void => {
   try {
-    const apiDir = path.dirname(DB_FILE);
+    const dbPath = getActiveDbFilePath();
+    const apiDir = path.dirname(dbPath);
     if (!fs.existsSync(apiDir)) {
       fs.mkdirSync(apiDir, { recursive: true });
     }
@@ -434,11 +447,11 @@ export const saveDb = (state: ApplicationState): void => {
     }
     
     // Atomic write: write to temp file then rename to prevent corruption during crashes
-    const tempFile = `${DB_FILE}.tmp`;
+    const tempFile = `${dbPath}.tmp`;
     const data = JSON.stringify(state, null, 2);
     
     fs.writeFileSync(tempFile, data, "utf-8");
-    fs.renameSync(tempFile, DB_FILE);
+    fs.renameSync(tempFile, dbPath);
   } catch (err) {
     console.error("Failed to save db.json:", err);
   }

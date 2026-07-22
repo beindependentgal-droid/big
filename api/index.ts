@@ -14,7 +14,7 @@ import {
   verifySessionToken, 
   writeAuditLog,
   SimulatedEmail
-} from "./db";
+} from "./_db";
 
 dotenv.config();
 

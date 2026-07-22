@@ -464,6 +464,86 @@
   ],
   "notifications": [
     {
+      "id": "not-sb-1784725984793",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725984237",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784725973119",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725431142",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725430572",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784725428843",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725367672",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725367181",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784725365016",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725249037",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784725248529",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784725246495",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784724806235",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-sb-1784724805674",
+      "title": "🎉 Connected successfully to your live Supabase database!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784724801588",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
+      "id": "not-backend-1784724738474",
+      "title": "⚡ Connected and synced with your live Express backend!",
+      "read": false
+    },
+    {
       "id": "not-sb-1784724252822",
       "title": "🎉 Connected successfully to your live Supabase database!",
       "read": false
@@ -880,71 +960,6 @@
     },
     {
       "id": "not-backend-1784711618187",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711407346",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711407077",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784711405713",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711385322",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784711384651",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784711382095",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784710015635",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784710015374",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784710014001",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784709996426",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-sb-1784709996148",
-      "title": "🎉 Connected successfully to your live Supabase database!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784709994148",
-      "title": "⚡ Connected and synced with your live Express backend!",
-      "read": false
-    },
-    {
-      "id": "not-backend-1784709993721",
       "title": "⚡ Connected and synced with your live Express backend!",
       "read": false
     }
