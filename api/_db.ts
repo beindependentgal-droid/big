@@ -67,7 +67,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
     author: {
       id: 'm1',
       name: 'Amina Bello',
-      avatar: '/images/female1.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Learner'
     },
     timestamp: 'Yesterday at 4:30 PM',
@@ -95,7 +95,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm2',
           name: 'Fatima Adebayo',
-          avatar: '/images/female1.jpg',
+          avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
           rank: 'Mentor'
         },
         content: 'Amina, as someone who sat on the evaluation advisory last year, the most critical part is the Clarity of Fund Allocation. Tell us exactly how that seed grant acts as a catalyst (e.g. buying 1 specific manufacturing sewing machine or setting up an e-commerce gateway). Avoid generic claims like "using it for marketing". Be highly numerical!',
@@ -108,7 +108,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm3',
           name: 'Hawa Keita',
-          avatar: '/images/member-1.png',
+          avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
           rank: 'Community Lead'
         },
         content: 'I agree with Fatima! When I applied, I detailed exactly how a 350,000 NGN grant would increase our textile dye batch volume by 40%. The judges loved the direct operational linkage. Keep it simple and focus on your core scaling milestone.',
@@ -127,7 +127,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
     author: {
       id: 'm3',
       name: 'Hawa Keita',
-      avatar: '/images/member-1.png',
+      avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
       rank: 'Community Lead'
     },
     timestamp: '3 days ago',
@@ -139,7 +139,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm4',
           name: 'Joy Namubiru',
-          avatar: '/images/member-2.png',
+          avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
           rank: 'Member'
         },
         content: 'This is gold, Hawa! We are trying to distribute our organic shea butter balms from Kampala into Kenya but custom tariff codes are so confusing. Please count me in! My email is joy@organicshea.co.ug.',
@@ -158,7 +158,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
     author: {
       id: 'm4',
       name: 'Joy Namubiru',
-      avatar: '/images/member-2.png',
+      avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
       rank: 'Member'
     },
     timestamp: '2 days ago',
@@ -170,7 +170,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm1',
           name: 'Amina Bello',
-          avatar: '/images/female1.jpg',
+          avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
           rank: 'Learner'
         },
         content: 'Wow, Joy! This sounds amazing. I have been building our local EdTech app with a solid React/Node.js stack and I also know two girls in my STEM academy who are incredibly proficient in building mobile apps. Let us connect via direct message so I can make the introductions.',
@@ -189,7 +189,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
     author: {
       id: 'm2',
       name: 'Fatima Adebayo',
-      avatar: '/images/female1.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Mentor'
     },
     timestamp: '4 days ago',
@@ -201,7 +201,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'you',
           name: 'Sarah Jenkins',
-          avatar: '/images/member-1.png',
+          avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
           rank: 'Learner'
         },
         content: 'Sister Fatima, I would love to join this circle! My main focus is launching my Lagos apparel checklist this month, and having your structured check-in will keep me totally focused. Count me in!',
@@ -220,7 +220,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
     author: {
       id: 'm2',
       name: 'Fatima Adebayo',
-      avatar: '/images/female1.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Mentor'
     },
     timestamp: '3 hours ago',
@@ -233,7 +233,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm1',
           name: 'Amina Bello',
-          avatar: '/images/female1.jpg',
+          avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
           rank: 'Learner'
         },
         content: 'This breakdown is pure gold! The Loom recording trick is so smart because it builds personal trust instantly. They can see our passion, our voice, and our authenticity before they even schedule a calendar invite.',
@@ -252,7 +252,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
     author: {
       id: 'm1',
       name: 'Amina Bello',
-      avatar: '/images/female1.jpg',
+      avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
       rank: 'Learner'
     },
     timestamp: 'Yesterday',
@@ -264,7 +264,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm4',
           name: 'Joy Namubiru',
-          avatar: '/images/member-2.png',
+          avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
           rank: 'Member'
         },
         content: 'Amina, I am sending you a warm virtual hug. Last week, we lost a whole cargo batch of glass cosmetic bottles to accidental damage. I cried for hours. But I realized that our resilience is not about not crying; it is about washing our face and letting ourselves start again. You are not alone, sister.',
@@ -277,7 +277,7 @@ const INITIAL_FORUM_THREADS: ForumThread[] = [
         author: {
           id: 'm2',
           name: 'Fatima Adebayo',
-          avatar: '/images/female1.jpg',
+          avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
           rank: 'Mentor'
         },
         content: 'Beautifully said Joy. Amina, please remember that custom officers and transit delays are external noise—they do not define your internal capabilities. Take a 24-hour digital detox. Your vision is worth the brief pause.',
@@ -368,7 +368,30 @@ export const loadDb = (): ApplicationState => {
   try {
     const dbPath = getActiveDbFilePath();
     if (fs.existsSync(dbPath)) {
-      const raw = fs.readFileSync(dbPath, "utf-8");
+      let raw = fs.readFileSync(dbPath, "utf-8");
+      
+      // Check if any old/stale paths or files exist in the raw JSON
+      const needsCleanup = raw.includes('src/assets/images/') || 
+                            raw.includes('assets/images/') ||
+                            raw.includes('female1.jpg') ||
+                            raw.includes('member-1.png') ||
+                            raw.includes('member-2.png') ||
+                            raw.includes('member-3.png');
+      
+      if (needsCleanup) {
+        raw = raw
+          .replace(/\/src\/assets\/images\//g, '/images/')
+          .replace(/src\/assets\/images\//g, '/images/')
+          .replace(/\/public\/src\/assets\/images\//g, '/images/')
+          .replace(/public\/src\/assets\/images\//g, '/images/')
+          .replace(/\/assets\/images\//g, '/images/')
+          .replace(/assets\/images\//g, '/images/')
+          .replace(/female1\.jpg/g, 'african_woman_portrait_1_1784708232425.jpg')
+          .replace(/member-1\.png/g, 'african_woman_portrait_2_1784708246407.jpg')
+          .replace(/member-2\.png/g, 'african_woman_portrait_3_1784708258772.jpg')
+          .replace(/member-3\.png/g, 'african_woman_portrait_4_1784708270262.jpg');
+      }
+
       const parsed = JSON.parse(raw);
       const defaults = getInitialState();
       
@@ -398,7 +421,7 @@ export const loadDb = (): ApplicationState => {
         ...parsed
       };
 
-      if (hashSeeded || !parsed.campaigns) {
+      if (hashSeeded || needsCleanup || !parsed.campaigns) {
         fs.writeFileSync(dbPath, JSON.stringify(merged, null, 2), "utf-8");
       }
       return merged;
