@@ -1383,50 +1383,6 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
             </div>
           </div>
 
-          {/* FOOTER */}
-          <footer className="border-t border-slate-200 pt-16 pb-8 max-w-6xl mx-auto text-left">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
-              <div className="col-span-2 space-y-4">
-                <h3 className="text-base font-heading font-black text-primary uppercase tracking-tight">BIG Academy</h3>
-                <p className="text-xs text-slate-400 max-w-xs leading-relaxed font-medium">
-                  Helping ambitious African women build practical competencies, establish sovereign financial independence, and scale.
-                </p>
-              </div>
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Explore</h4>
-                <ul className="space-y-2 text-xs text-slate-500 font-bold">
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Courses</button></li>
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Learning Paths</button></li>
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Mentors</button></li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Resources</h4>
-                <ul className="space-y-2 text-xs text-slate-500 font-bold">
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Templates</button></li>
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Trackers</button></li>
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Guides</button></li>
-                </ul>
-              </div>
-              <div className="space-y-3">
-                <h4 className="text-[10px] font-black text-primary uppercase tracking-widest">Support</h4>
-                <ul className="space-y-2 text-xs text-slate-500 font-bold">
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Community</button></li>
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Terms of Service</button></li>
-                  <li><button onClick={() => setCurrentView?.('auth')} className="hover:text-secondary">Contact Support</button></li>
-                </ul>
-              </div>
-            </div>
-            <div className="border-t border-slate-100 pt-8 flex flex-col sm:flex-row justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              <p>© 2026 Be Independent Gal (BIG). All rights reserved.</p>
-              <div className="flex gap-6 mt-4 sm:mt-0">
-                <a href="#privacy" className="hover:text-primary">Privacy</a>
-                <a href="#terms" className="hover:text-primary">Terms</a>
-                <a href="#contact" className="hover:text-primary">Contact</a>
-              </div>
-            </div>
-          </footer>
-
         </div>
 
         {/* INTERACTIVE PREVIEW MODAL */}

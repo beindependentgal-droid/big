@@ -32,6 +32,24 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
     }
   }, [isLogin]);
 
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+        return;
+      }
+
+      if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
+        const { token, user } = event.data;
+        localStorage.setItem('big_v2_session_token', token);
+        localStorage.setItem('big_v2_current_user_email', user.email);
+        onAuthSuccess(false, user.name, user.email);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [onAuthSuccess]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -102,6 +120,69 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
       // No biometrics enrolled yet on this device - guide user
       setBioMode('register');
       setBioModalOpen(true);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(window.location.origin)}`);
+      if (!res.ok) {
+        throw new Error("Failed to connect to Google Auth API");
+      }
+      const data = await res.json();
+
+      if (data.isSimulated) {
+        // Fallback simulator for development/demo mode
+        const emailInput = prompt(
+          "✨ Google Sign-In (Simulator Mode):\n\nEnter your email address to sign in or register with Google:", 
+          "sister@example.com"
+        );
+        if (!emailInput) {
+          setLoading(false);
+          return;
+        }
+        
+        const nameInput = prompt(
+          "Enter your full name for your Google Profile:", 
+          "Sarah Jenkins"
+        );
+        if (!nameInput) {
+          setLoading(false);
+          return;
+        }
+
+        const registerRes = await fetch('/api/auth/google/simulate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: nameInput, email: emailInput })
+        });
+
+        if (!registerRes.ok) {
+          throw new Error("Simulation Google Auth failed");
+        }
+
+        const simData = await registerRes.json();
+        localStorage.setItem('big_v2_session_token', simData.token);
+        localStorage.setItem('big_v2_current_user_email', simData.user.email);
+        onAuthSuccess(false, simData.user.name, simData.user.email);
+      } else {
+        // Real Google OAuth Popup
+        const authWindow = window.open(
+          data.url,
+          'google_oauth_popup',
+          'width=500,height=600'
+        );
+
+        if (!authWindow) {
+          alert('Please allow popups for this site to sign in with Google.');
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || 'Google Sign-In failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -203,17 +284,42 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
           <div className="space-y-3.5">
             <button
               type="submit"
-              className="w-full group flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-sm font-black uppercase tracking-[0.15em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary/95 shadow-md shadow-primary/20"
+              disabled={loading}
+              className="w-full group flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-4 text-sm font-black uppercase tracking-[0.15em] text-white transition-all hover:-translate-y-0.5 hover:bg-primary/95 shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span>{isLogin ? 'Log In' : 'Create Account'}</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </button>
+
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-slate-150 dark:border-slate-800"></div>
+              <span className="flex-shrink mx-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">or continue with</span>
+              <div className="flex-grow border-t border-slate-150 dark:border-slate-800"></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-8 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 transition-all hover:bg-slate-50 dark:hover:bg-slate-800/50 shadow-sm disabled:opacity-50"
+            >
+              <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+                <g transform="matrix(1, 0, 0, 1, 0, 0)">
+                  <path d="M21.35,11.1H12v2.7h5.38c-0.24,1.28 -0.96,2.37 -2.04,3.1v2.57h3.3c1.93,-1.78 3.04,-4.4 3.04,-7.4C21.68,11.72 21.56,11.39 21.35,11.1z" fill="#4285F4" />
+                  <path d="M12,20.6c2.43,0 4.47,-0.8 5.96,-2.18l-3.3,-2.57c-0.9,0.6 -2.07,0.97 -3.34,0.97 -2.57,0 -4.75,-1.73 -5.53,-4.06H2.38v2.65C3.89,17.48 7.64,20.6 12,20.6z" fill="#34A853" />
+                  <path d="M6.47,12.76c-0.19,-0.58 -0.3,-1.2 -0.3,-1.84s0.11,-1.26 0.3,-1.84V6.43H2.38c-0.64,1.28 -1,2.72 -1,4.24s0.36,2.96 1,4.24L6.47,12.76z" fill="#FBBC05" />
+                  <path d="M12,5.16c1.32,0 2.51,0.45 3.44,1.35l2.58,-2.58C16.46,2.51 14.43,1.7 12,1.7C7.64,1.7 3.89,4.82 2.38,7.82l4.09,3.18C7.25,6.89 9.43,5.16 12,5.16z" fill="#EA4335" />
+                </g>
+              </svg>
+              <span>Sign in with Google</span>
             </button>
 
             {isLogin && (
               <button
                 type="button"
                 onClick={handleQuickBiometricLogin}
-                className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-8 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 transition-all hover:bg-slate-100 dark:hover:bg-slate-800"
+                disabled={loading}
+                className="w-full flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 px-8 py-3.5 text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 transition-all hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50"
               >
                 <Fingerprint className="h-4 w-4 text-pink-500" />
                 <span>Use Biometric Sign-In</span>

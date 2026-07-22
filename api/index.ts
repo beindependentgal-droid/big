@@ -347,6 +347,267 @@ app.post("/api/auth/biometric-login", authLimiter, (req, res) => {
   }
 });
 
+// Helper to get external origin in local, development, and production environments
+const getExternalOrigin = (req: any): string => {
+  if (process.env.APP_URL) {
+    return process.env.APP_URL.replace(/\/$/, '');
+  }
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const host = forwardedHost || req.get('host') || '';
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProto || ((host.includes('.run.app') || req.secure) ? 'https' : req.protocol);
+  return `${protocol}://${host}`;
+};
+
+// Google OAuth Sign-In URL Endpoint
+app.get("/api/auth/google/url", (req, res) => {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID;
+    if (!clientId) {
+      // Run in elegant simulation fallback mode in development or when keys aren't set
+      return res.json({ isSimulated: true });
+    }
+
+    const origin = (req.query.origin as string) || getExternalOrigin(req);
+    const redirectUri = `${origin}/api/auth/google/callback`;
+
+    // Encode origin in the state parameter to carry it through the OAuth loop securely
+    const stateObj = { origin };
+    const stateStr = Buffer.from(JSON.stringify(stateObj)).toString('base64');
+
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      prompt: 'select_account',
+      state: stateStr
+    }).toString();
+
+    res.json({ isSimulated: false, url: authUrl });
+  } catch (error) {
+    console.error("Google Auth URL generation error:", error);
+    res.status(500).json({ error: "Failed to generate Google auth URL" });
+  }
+});
+
+// Google OAuth Callback Handler Endpoint
+app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code) {
+      return res.status(400).send("Authorization code is missing");
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      return res.status(500).send("Google client credentials are not configured");
+    }
+
+    // Extract original origin from the state parameter if present to match the redirect_uri exactly
+    let origin = getExternalOrigin(req);
+    if (state) {
+      try {
+        const decodedState = JSON.parse(Buffer.from(state as string, 'base64').toString('utf-8'));
+        if (decodedState && decodedState.origin) {
+          origin = decodedState.origin;
+        }
+      } catch (e) {
+        console.error("Failed to parse Google OAuth state:", e);
+      }
+    }
+    const redirectUri = `${origin}/api/auth/google/callback`;
+
+    // Exchange code for Google Access Token
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code: code as string,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code'
+      })
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      return res.status(500).send(`Failed to exchange Google OAuth code: ${errText}`);
+    }
+
+    const tokens = await tokenRes.json();
+    const accessToken = tokens.access_token;
+
+    // Retrieve user profile information using the access token
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!userRes.ok) {
+      return res.status(500).send("Failed to retrieve Google user profile");
+    }
+
+    const googleUser = await userRes.json();
+    const email = googleUser.email;
+    const name = googleUser.name || googleUser.given_name || 'BIG Sister';
+    const avatar = googleUser.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`;
+
+    const db = loadDb();
+    const cleanEmail = email.trim().toLowerCase();
+    let user = db.members.find(m => m.email?.toLowerCase() === cleanEmail);
+
+    if (!user) {
+      // Auto-register new Google user
+      const userId = `user-google-${Date.now()}`;
+      const salt = generateSalt();
+      const hash = hashPassword(crypto.randomBytes(16).toString('hex'), salt);
+
+      const pinSalt = generateSalt();
+      const pinHash = hashPassword('123456', pinSalt);
+
+      user = {
+        id: userId,
+        name: truncateString(name, 100),
+        email: cleanEmail,
+        avatar: avatar,
+        title: 'Aspiring Entrepreneur',
+        city: 'Lagos',
+        rank: 'Learner' as const,
+        skills: [],
+        interests: [],
+        bio: '',
+        points: 0,
+        badges: [],
+        passwordHash: hash,
+        passwordSalt: salt,
+        pinHash: pinHash,
+        pinSalt: pinSalt,
+        joinedAt: new Date().toISOString()
+      };
+
+      db.members.push(user);
+
+      // Welcome Email Simulation
+      if (!db.simulatedEmails) db.simulatedEmails = [];
+      db.simulatedEmails.unshift({
+        id: `mail-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+        to: cleanEmail,
+        subject: `🌸 Welcome to Be Independent Gal (BIG) Platform, ${name}!`,
+        body: `Hi ${name},\n\n` +
+          `Welcome to the BIG global sisterhood! Your account was securely established via Google Sign-In.\n\n` +
+          `You now have full access to our community feeds, BIG Academy seed grants, peer mentorship circles, micro-business tools, and BIG Fund impact campaigns.\n\n` +
+          `Explore your dashboard and build your independent future with us!\n\n` +
+          `Warmly,\n` +
+          `The BIG Foundation Team\n` +
+          `https://bigfund.org`,
+        timestamp: Date.now()
+      });
+
+      saveDb(db);
+    }
+
+    const token = createSessionToken(user.id, cleanEmail);
+    writeAuditLog(user.id, cleanEmail, "Google login successful", req.ip || 'unknown');
+
+    res.send(`
+      <html>
+        <body>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ 
+                type: 'GOOGLE_AUTH_SUCCESS', 
+                token: ${JSON.stringify(token)}, 
+                user: ${JSON.stringify(user)} 
+              }, '*');
+              window.close();
+            } else {
+              window.location.href = '/';
+            }
+          </script>
+          <p>Authentication successful. You can close this window now.</p>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error("Google Auth Callback error:", error);
+    res.status(500).send("Internal Google authentication failed");
+  }
+});
+
+// Google OAuth Simulation Endpoint for Local/Interactive Preview Fallback
+app.post("/api/auth/google/simulate", authLimiter, (req, res) => {
+  try {
+    const { name, email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+
+    const db = loadDb();
+    const cleanEmail = email.trim().toLowerCase();
+    let user = db.members.find(m => m.email?.toLowerCase() === cleanEmail);
+
+    if (!user) {
+      const userId = `user-google-sim-${Date.now()}`;
+      const salt = generateSalt();
+      const hash = hashPassword(crypto.randomBytes(16).toString('hex'), salt);
+
+      const pinSalt = generateSalt();
+      const pinHash = hashPassword('123456', pinSalt);
+
+      const resolvedName = name || 'BIG Sister';
+      user = {
+        id: userId,
+        name: truncateString(resolvedName, 100),
+        email: cleanEmail,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=random`,
+        title: 'Aspiring Entrepreneur',
+        city: 'Lagos',
+        rank: 'Learner' as const,
+        skills: [],
+        interests: [],
+        bio: '',
+        points: 0,
+        badges: [],
+        passwordHash: hash,
+        passwordSalt: salt,
+        pinHash: pinHash,
+        pinSalt: pinSalt,
+        joinedAt: new Date().toISOString()
+      };
+
+      db.members.push(user);
+
+      // Welcome Email Simulation
+      if (!db.simulatedEmails) db.simulatedEmails = [];
+      db.simulatedEmails.unshift({
+        id: `mail-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+        to: cleanEmail,
+        subject: `🌸 Welcome to Be Independent Gal (BIG) Platform, ${resolvedName}!`,
+        body: `Hi ${resolvedName},\n\n` +
+          `Welcome to the BIG global sisterhood! Your account has been initialized successfully in simulated Google Sign-In.\n\n` +
+          `You now have full access to our community feeds, BIG Academy seed grants, peer mentorship circles, micro-business tools, and BIG Fund impact campaigns.\n\n` +
+          `Explore your dashboard and build your independent future with us!\n\n` +
+          `Warmly,\n` +
+          `The BIG Foundation Team\n` +
+          `https://bigfund.org`,
+        timestamp: Date.now()
+      });
+
+      saveDb(db);
+    }
+
+    const token = createSessionToken(user.id, cleanEmail);
+    writeAuditLog(user.id, cleanEmail, "Simulated Google Sign-In successful", req.ip || 'unknown');
+    res.json({ token, user });
+  } catch (error) {
+    console.error("Simulation Google error:", error);
+    res.status(500).json({ error: "Google simulation sign-in failed" });
+  }
+});
+
 // 4. Request OTP (One-Time Passcode)
 app.post("/api/auth/request-otp", authLimiter, (req, res) => {
   try {

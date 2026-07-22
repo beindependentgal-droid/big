@@ -451,7 +451,7 @@
     font-size: 16px;
     color: var(--foreground);
     background: var(--background);
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100%;
   }
 
@@ -462,7 +462,7 @@
     color: var(--text-color-body);
     min-height: 100vh;
     background: var(--background);
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100%;
   }
 
