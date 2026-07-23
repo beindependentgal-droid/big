@@ -1,5 +1,4 @@
 import express from "express";
-import { GoogleGenAI } from "@google/genai";
 import { Resend } from "resend";
 import dotenv from "dotenv";
 import crypto from "crypto";
@@ -15,6 +14,27 @@ import {
   writeAuditLog,
   SimulatedEmail
 } from "./_db";
+
+let aiClient: any | null = null;
+async function getAiClient() {
+  if (aiClient) return aiClient;
+  try {
+    const moduleName = "@google/genai";
+    const module = await import(moduleName);
+    aiClient = new module.GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build',
+        }
+      }
+    });
+    return aiClient;
+  } catch (error: any) {
+    console.warn("Gemini AI package is not installed or failed to load. AI endpoints will be disabled.", error?.message || error);
+    return null;
+  }
+}
 
 dotenv.config();
 
@@ -141,16 +161,6 @@ function sanitizeAndTruncateArray(arr: any, maxItems: number, maxItemLength: num
   if (!Array.isArray(arr)) return [];
   return arr.slice(0, maxItems).map(item => truncateString(item, maxItemLength));
 }
-
-// Initialize GoogleGenAI server-side with key
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      'User-Agent': 'aistudio-build',
-    }
-  }
-});
 
 // Middleware for server-side token authorization
 function authenticateToken(req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -1415,6 +1425,10 @@ app.post("/api/circle-states", (req, res) => {
 // API Route: Mentor advice (with active input limits & rate limiting)
 app.post("/api/gemini/mentor-advice", aiLimiter, async (req, res) => {
   try {
+    const ai = await getAiClient();
+    if (!ai) {
+      return res.status(503).json({ error: "AI endpoints are currently unavailable because the Gemini package is not installed." });
+    }
     let { name, title, city, skills, interests, bio, topic } = req.body;
     
     // Strict Input Validation & Length Limits
@@ -1456,6 +1470,10 @@ Provide a direct, inspiring, and highly actionable mentoring response. Use the t
 // API Route: Pitch Builder (with active input limits & rate limiting)
 app.post("/api/gemini/pitch-builder", aiLimiter, async (req, res) => {
   try {
+    const ai = await getAiClient();
+    if (!ai) {
+      return res.status(503).json({ error: "AI endpoints are currently unavailable because the Gemini package is not installed." });
+    }
     let { businessName, description, targetAudience, uniqueValue } = req.body;
     
     // Strict Input Validation & Length Limits
@@ -1496,6 +1514,10 @@ Make it sound highly professional, passionate, and tailored for investors, retai
 // API Route: Confidence Coaching (with active input limits & rate limiting)
 app.post("/api/gemini/confidence-coaching", aiLimiter, async (req, res) => {
   try {
+    const ai = await getAiClient();
+    if (!ai) {
+      return res.status(503).json({ error: "AI endpoints are currently unavailable because the Gemini package is not installed." });
+    }
     let { journalText } = req.body;
     
     // Strict Input Validation & Length Limits
@@ -1786,7 +1808,7 @@ app.post("/api/mpesa/stkpush/simulate-confirm", (req, res) => {
           id: `monthly-${Date.now()}`,
           name: donationObj.donorName,
           amount: txn.amount,
-          avatar: "/src/assets/images/african_woman_portrait_1_1784708232425.jpg",
+          avatar: "/images/african_woman_portrait_1_1784708232425.jpg",
           tier: "Gold Champion",
           joinedAt: new Date().toISOString(),
           badge: "🏆 GOLD CHAMPION"

@@ -74,23 +74,17 @@ window.addEventListener('error', (e) => {
       let originalSrc = img.src;
       let newSrc = originalSrc;
       
-      if (originalSrc.includes('src/assets/images/') || originalSrc.includes('assets/images/')) {
-        newSrc = originalSrc
-          .replace(/\/src\/assets\/images\//g, '/images/')
-          .replace(/src\/assets\/images\//g, '/images/')
-          .replace(/\/assets\/images\//g, '/images/')
-          .replace(/assets\/images\//g, '/images/');
-      }
-      
-      if (originalSrc.includes('female1.jpg')) {
-        newSrc = newSrc.replace(/female1\.jpg/g, 'african_woman_portrait_1_1784708232425.jpg');
-      } else if (originalSrc.includes('member-1.png')) {
-        newSrc = newSrc.replace(/member-1\.png/g, 'african_woman_portrait_2_1784708246407.jpg');
-      } else if (originalSrc.includes('member-2.png')) {
-        newSrc = newSrc.replace(/member-2\.png/g, 'african_woman_portrait_3_1784708258772.jpg');
-      } else if (originalSrc.includes('member-3.png')) {
-        newSrc = newSrc.replace(/member-3\.png/g, 'african_woman_portrait_4_1784708270262.jpg');
-      }
+      newSrc = newSrc
+        .replace(/\/public\/src\/assets\/images\//g, '/images/')
+        .replace(/public\/src\/assets\/images\//g, '/images/')
+        .replace(/\/src\/assets\/images\//g, '/images/')
+        .replace(/src\/assets\/images\//g, '/images/')
+        .replace(/\/assets\/images\//g, '/images/')
+        .replace(/assets\/images\//g, '/images/')
+        .replace(/female1\.jpg/g, 'african_woman_portrait_1_1784708232425.jpg')
+        .replace(/member-1\.png/g, 'african_woman_portrait_2_1784708246407.jpg')
+        .replace(/member-2\.png/g, 'african_woman_portrait_3_1784708258772.jpg')
+        .replace(/member-3\.png/g, 'african_woman_portrait_4_1784708270262.jpg');
       
       if (newSrc !== originalSrc) {
         img.src = newSrc;

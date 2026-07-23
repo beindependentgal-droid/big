@@ -21,16 +21,10 @@ export const isSupabaseConfigured = () => {
   return !!(supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http'));
 };
 
-// Create the client with safety and inject our custom session token dynamically
-export const supabase = isSupabaseConfigured() 
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      global: {
-        get headers() {
-          const token = localStorage.getItem('big_v2_session_token') || '';
-          return token ? { Authorization: `Bearer ${token}` } : {};
-        }
-      }
-    }) 
+// Create the client with the public Supabase anon key only.
+// Do not send the local app session token here unless it is a real Supabase JWT.
+export const supabase = isSupabaseConfigured()
+  ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
 let globalTablesMissing = false;

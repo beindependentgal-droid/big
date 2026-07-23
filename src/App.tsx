@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { calculatePointsAndBadges, updateMembers } from './lib/stateHelpers';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -7,19 +7,13 @@ import { HomeView } from './components/HomeView';
 import { AcademyView } from './components/AcademyView';
 import { CirclesView } from './components/CirclesView';
 import { CircleHub } from './components/CircleHub';
-import { DashboardView } from './components/DashboardView';
 import { DirectoryView } from './components/DirectoryView';
 import { MentorshipView } from './components/MentorshipView';
 import { EventsView } from './components/EventsView';
 import { LeaderboardView } from './components/LeaderboardView';
-import { MessagesView } from './components/MessagesView';
 import { ProfileView } from './components/ProfileView';
-import { AdminDashboardView } from './components/AdminDashboardView';
-import { CommunityFeedsView } from './components/CommunityFeedsView';
 import { PostComposer } from './components/PostComposer';
-import { SettingsView } from './components/SettingsView';
 import { SearchView } from './components/SearchView';
-import { MySistersView } from './components/MySistersView';
 import { AuthView } from './components/AuthView';
 import { OnboardingView } from './components/OnboardingView';
 import { TourOverlay } from './components/TourOverlay';
@@ -30,13 +24,19 @@ import { AboutView } from './components/AboutView';
 import { BIGClubView } from './components/BIGClubView';
 import { ContactView } from './components/ContactView';
 import { ProgramsView } from './components/ProgramsView';
-import { BIGFundView } from './components/BIGFundView';
 import { NotificationsView } from './components/NotificationsView';
 import { BottomNav } from './components/Navigation';
 import { LeftSidebar } from './components/LeftSidebar';
 import { ScrollToTop } from './components/ScrollToTop';
 
-import { ResourceLibraryView } from './components/ResourceLibraryView';
+const DashboardView = lazy(() => import('./components/DashboardView').then((module) => ({ default: module.DashboardView })));
+const MessagesView = lazy(() => import('./components/MessagesView').then((module) => ({ default: module.MessagesView })));
+const AdminDashboardView = lazy(() => import('./components/AdminDashboardView').then((module) => ({ default: module.AdminDashboardView })));
+const CommunityFeedsView = lazy(() => import('./components/CommunityFeedsView').then((module) => ({ default: module.CommunityFeedsView })));
+const SettingsView = lazy(() => import('./components/SettingsView').then((module) => ({ default: module.SettingsView })));
+const MySistersView = lazy(() => import('./components/MySistersView').then((module) => ({ default: module.MySistersView })));
+const BIGFundView = lazy(() => import('./components/BIGFundView').then((module) => ({ default: module.BIGFundView })));
+const ResourceLibraryView = lazy(() => import('./components/ResourceLibraryView').then((module) => ({ default: module.ResourceLibraryView })));
 import { 
   INITIAL_MEMBERS, 
   INITIAL_EVENTS, 
@@ -63,6 +63,18 @@ import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConfigured, supabaseService, areTablesMissing } from './supabase';
 import { apiService } from './api';
 import { copyToClipboard } from './lib/utils';
+
+const appViewFallback = (
+  <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/10 bg-slate-900/40 text-sm text-slate-300">
+    Loading view...
+  </div>
+);
+
+const routeFallback = (
+  <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-slate-700/60 bg-slate-900/50 text-sm text-slate-300">
+    Loading view...
+  </div>
+);
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -1171,11 +1183,13 @@ export default function App() {
         )}
 
         {currentView === 'big-fund' && (
-          <BIGFundView 
-            setCurrentView={handleNavigation} 
-            isAuthenticated={isAuthenticated}
-            triggerSimulatedEmail={(subject, body) => setActiveEmail({ subject, from: 'security@beindependentgal.com', body })}
-          />
+          <Suspense fallback={routeFallback}>
+            <BIGFundView 
+              setCurrentView={handleNavigation} 
+              isAuthenticated={isAuthenticated}
+              triggerSimulatedEmail={(subject, body) => setActiveEmail({ subject, from: 'security@beindependentgal.com', body })}
+            />
+          </Suspense>
         )}
 
         {currentView === 'big-club' && (
@@ -1195,37 +1209,39 @@ export default function App() {
         )}
 
         {currentView === 'dashboard' && (
-          <DashboardView 
-            members={members}
-            activeTab={circleTab}
-            setActiveTab={setCircleTab}
-            posts={posts}
-            setPosts={setPosts}
-            challenges={challenges}
-            setChallenges={setChallenges}
-            resources={resources}
-            currentUser={currentUser}
-            addPoints={addPoints}
-            setCurrentView={handleNavigation}
-            followingIds={followingIds}
-            toggleFollow={toggleFollow}
-            bookmarkedPostIds={bookmarkedPostIds}
-            toggleBookmarkPost={toggleBookmarkPost}
-            setSelectedConversationMember={setSelectedConversationMember}
-            profileCompletion={calculateProfileCompletion(currentUser)}
-            connections={connections}
-            requestConnection={requestConnection}
-            handleViewProfile={(id) => {
-              setSelectedProfileId(id);
-              setCurrentView('profile');
-            }}
-            isDark={isDark}
-            circles={circles}
-            setCircles={setCircles}
-            mentorshipPairs={mentorshipPairs}
-            setMentorshipPairs={setMentorshipPairs}
-            logActivity={logActivity}
-          />
+          <Suspense fallback={routeFallback}>
+            <DashboardView 
+              members={members}
+              activeTab={circleTab}
+              setActiveTab={setCircleTab}
+              posts={posts}
+              setPosts={setPosts}
+              challenges={challenges}
+              setChallenges={setChallenges}
+              resources={resources}
+              currentUser={currentUser}
+              addPoints={addPoints}
+              setCurrentView={handleNavigation}
+              followingIds={followingIds}
+              toggleFollow={toggleFollow}
+              bookmarkedPostIds={bookmarkedPostIds}
+              toggleBookmarkPost={toggleBookmarkPost}
+              setSelectedConversationMember={setSelectedConversationMember}
+              profileCompletion={calculateProfileCompletion(currentUser)}
+              connections={connections}
+              requestConnection={requestConnection}
+              handleViewProfile={(id) => {
+                setSelectedProfileId(id);
+                setCurrentView('profile');
+              }}
+              isDark={isDark}
+              circles={circles}
+              setCircles={setCircles}
+              mentorshipPairs={mentorshipPairs}
+              setMentorshipPairs={setMentorshipPairs}
+              logActivity={logActivity}
+            />
+          </Suspense>
         )}
 
         {currentView === 'profile' && (
@@ -1249,12 +1265,14 @@ export default function App() {
         )}
 
         {currentView === 'settings' && (
-          <SettingsView 
-            currentUser={currentUser}
-            onSaveProfile={handleSaveProfile}
-            addPoints={addPoints}
-            triggerSimulatedEmail={(subject, body) => setActiveEmail({ subject, from: 'security@beindependentgal.com', body })}
-          />
+          <Suspense fallback={routeFallback}>
+            <SettingsView 
+              currentUser={currentUser}
+              onSaveProfile={handleSaveProfile}
+              addPoints={addPoints}
+              triggerSimulatedEmail={(subject, body) => setActiveEmail({ subject, from: 'security@beindependentgal.com', body })}
+            />
+          </Suspense>
         )}
 
         {currentView === 'directory' && (
@@ -1281,17 +1299,19 @@ export default function App() {
         )}
 
         {currentView === 'my-sisters' && (
-          <MySistersView 
-            members={members}
-            followingIds={followingIds}
-            toggleFollow={toggleFollow}
-            setCurrentView={handleNavigation}
-            setSelectedConversationMember={setSelectedConversationMember}
-            connections={connections}
-            currentUser={currentUser}
-            onSendMessage={handleQuickMessage}
-            addNotification={addNotification}
-          />
+          <Suspense fallback={routeFallback}>
+            <MySistersView 
+              members={members}
+              followingIds={followingIds}
+              toggleFollow={toggleFollow}
+              setCurrentView={handleNavigation}
+              setSelectedConversationMember={setSelectedConversationMember}
+              connections={connections}
+              currentUser={currentUser}
+              onSendMessage={handleQuickMessage}
+              addNotification={addNotification}
+            />
+          </Suspense>
         )}
 
         {currentView === 'circles' && (
@@ -1391,83 +1411,89 @@ export default function App() {
         )}
 
         {currentView === 'messages' && (
-          <MessagesView 
-            conversations={conversations}
-            setConversations={setConversations}
-            selectedMember={selectedConversationMember}
-            setSelectedMember={setSelectedConversationMember}
-            addPoints={addPoints}
-            initialDraftMessage={messageDraft}
-            clearDraftMessage={() => setMessageDraft('')}
-            currentUser={currentUser}
-          />
+          <Suspense fallback={routeFallback}>
+            <MessagesView 
+              conversations={conversations}
+              setConversations={setConversations}
+              selectedMember={selectedConversationMember}
+              setSelectedMember={setSelectedConversationMember}
+              addPoints={addPoints}
+              initialDraftMessage={messageDraft}
+              clearDraftMessage={() => setMessageDraft('')}
+              currentUser={currentUser}
+            />
+          </Suspense>
         )}
 
         {currentView === 'admin' && (
-          <AdminDashboardView 
-            members={members}
-            setMembers={setMembers}
-            events={events}
-            setEvents={setEvents}
-            challenges={challenges}
-            setChallenges={setChallenges}
-            circles={circles}
-            setCircles={setCircles}
-            circleRequests={circleRequests}
-            setCircleRequests={setCircleRequests}
-            posts={posts}
-            setPosts={setPosts}
-            currentUser={currentUser}
-            userPoints={userPoints}
-            setUserPoints={setUserPoints}
-            userBadges={userBadges}
-            setUserBadges={setUserBadges}
-            notifications={notifications}
-            setNotifications={setNotifications}
-            addPoints={addPoints}
-            setCurrentView={handleNavigation}
-            supabaseConnected={supabaseConnected}
-            blockedUserIds={blockedUserIds}
-            setBlockedUserIds={setBlockedUserIds}
-            reportedUserIds={reportedUserIds}
-            setReportedUserIds={setReportedUserIds}
-            activityLogs={activityLogs}
-            logActivity={logActivity}
-            logRetentionDays={logRetentionDays}
-            setLogRetentionDays={setLogRetentionDays}
-            autoHideReported={autoHideReported}
-            setAutoHideReported={setAutoHideReported}
-            reportThreshold={reportThreshold}
-            setReportThreshold={setReportThreshold}
-          />
+          <Suspense fallback={routeFallback}>
+            <AdminDashboardView 
+              members={members}
+              setMembers={setMembers}
+              events={events}
+              setEvents={setEvents}
+              challenges={challenges}
+              setChallenges={setChallenges}
+              circles={circles}
+              setCircles={setCircles}
+              circleRequests={circleRequests}
+              setCircleRequests={setCircleRequests}
+              posts={posts}
+              setPosts={setPosts}
+              currentUser={currentUser}
+              userPoints={userPoints}
+              setUserPoints={setUserPoints}
+              userBadges={userBadges}
+              setUserBadges={setUserBadges}
+              notifications={notifications}
+              setNotifications={setNotifications}
+              addPoints={addPoints}
+              setCurrentView={handleNavigation}
+              supabaseConnected={supabaseConnected}
+              blockedUserIds={blockedUserIds}
+              setBlockedUserIds={setBlockedUserIds}
+              reportedUserIds={reportedUserIds}
+              setReportedUserIds={setReportedUserIds}
+              activityLogs={activityLogs}
+              logActivity={logActivity}
+              logRetentionDays={logRetentionDays}
+              setLogRetentionDays={setLogRetentionDays}
+              autoHideReported={autoHideReported}
+              setAutoHideReported={setAutoHideReported}
+              reportThreshold={reportThreshold}
+              setReportThreshold={setReportThreshold}
+            />
+          </Suspense>
         )}
 
         {currentView === 'feeds' && (
-          <CommunityFeedsView 
-            members={members}
-            posts={posts}
-            setPosts={setPosts}
-            circles={circles}
-            setCircles={setCircles}
-            circleRequests={circleRequests}
-            setCircleRequests={setCircleRequests}
-            events={events}
-            currentUser={currentUser}
-            addPoints={addPoints}
-            setCurrentView={handleNavigation}
-            followingIds={followingIds}
-            toggleFollow={toggleFollow}
-            bookmarkedPostIds={bookmarkedPostIds}
-            toggleBookmarkPost={toggleBookmarkPost}
-            setSelectedConversationMember={setSelectedConversationMember}
-            handleViewProfile={(id) => {
-              setSelectedProfileId(id);
-              setCurrentView('profile');
-            }}
-            logActivity={logActivity}
-            autoHideReported={autoHideReported}
-            reportThreshold={reportThreshold}
-          />
+          <Suspense fallback={routeFallback}>
+            <CommunityFeedsView 
+              members={members}
+              posts={posts}
+              setPosts={setPosts}
+              circles={circles}
+              setCircles={setCircles}
+              circleRequests={circleRequests}
+              setCircleRequests={setCircleRequests}
+              events={events}
+              currentUser={currentUser}
+              addPoints={addPoints}
+              setCurrentView={handleNavigation}
+              followingIds={followingIds}
+              toggleFollow={toggleFollow}
+              bookmarkedPostIds={bookmarkedPostIds}
+              toggleBookmarkPost={toggleBookmarkPost}
+              setSelectedConversationMember={setSelectedConversationMember}
+              handleViewProfile={(id) => {
+                setSelectedProfileId(id);
+                setCurrentView('profile');
+              }}
+              logActivity={logActivity}
+              autoHideReported={autoHideReported}
+              reportThreshold={reportThreshold}
+            />
+          </Suspense>
         )}
         {console.log('App.tsx rendering feeds:', { currentView, membersCount: members.length, postsCount: posts.length })}
 
@@ -1493,13 +1519,15 @@ export default function App() {
         )}
 
         {currentView === 'resource-library' && (
-          <ResourceLibraryView
-            resources={resources}
-            setResources={setResources}
-            onBack={() => setCurrentView('search')}
-            addPoints={addPoints}
-            currentUser={currentUser}
-          />
+          <Suspense fallback={routeFallback}>
+            <ResourceLibraryView
+              resources={resources}
+              setResources={setResources}
+              onBack={() => setCurrentView('search')}
+              addPoints={addPoints}
+              currentUser={currentUser}
+            />
+          </Suspense>
         )}
 
         {currentView === 'notifications' && (

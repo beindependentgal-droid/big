@@ -64,6 +64,11 @@ export const apiService = {
 
   // Save/Sync state sections securely
   async syncState(partialState: Partial<FullBackendState>): Promise<FullBackendState> {
+    const token = localStorage.getItem('big_v2_session_token');
+    if (!token) {
+      // No auth session yet; skip authenticated sync and let local storage act as fallback.
+      return partialState as FullBackendState;
+    }
     const res = await fetch('/api/db/sync', {
       method: 'POST',
       headers: getHeaders(),

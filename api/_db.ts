@@ -380,10 +380,10 @@ export const loadDb = (): ApplicationState => {
       
       if (needsCleanup) {
         raw = raw
-          .replace(/\/src\/assets\/images\//g, '/images/')
-          .replace(/src\/assets\/images\//g, '/images/')
           .replace(/\/public\/src\/assets\/images\//g, '/images/')
           .replace(/public\/src\/assets\/images\//g, '/images/')
+          .replace(/\/src\/assets\/images\//g, '/images/')
+          .replace(/src\/assets\/images\//g, '/images/')
           .replace(/\/assets\/images\//g, '/images/')
           .replace(/assets\/images\//g, '/images/')
           .replace(/female1\.jpg/g, 'african_woman_portrait_1_1784708232425.jpg')
