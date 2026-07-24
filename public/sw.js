@@ -1,5 +1,5 @@
 // Simple service worker for basic PWA offline support
-const CACHE_NAME = 'big-pwa-v1';
+const CACHE_NAME = 'big-pwa-v3';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -30,6 +30,12 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
+  // Never cache API or auth endpoints. They must always go to the server.
+  if (url.origin === location.origin && url.pathname.startsWith('/api/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Handle navigation requests
   if (request.mode === 'navigate') {
     event.respondWith(
@@ -44,8 +50,14 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For other requests, use cache-first for same-origin assets
+  // Cache-first for same-origin static assets only.
   if (url.origin === location.origin) {
+    const isStaticAsset = ['script', 'style', 'image', 'font', 'manifest'].includes(request.destination);
+    if (!isStaticAsset) {
+      event.respondWith(fetch(request));
+      return;
+    }
+
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((resp) => {
         if (resp && resp.ok) {

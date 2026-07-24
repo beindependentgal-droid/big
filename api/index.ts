@@ -2,6 +2,7 @@ import express from "express";
 import { Resend } from "resend";
 import dotenv from "dotenv";
 import crypto from "crypto";
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import type { Donation, MonthlySupporter, Campaign } from "../src/data";
 import { 
   loadDb, 
@@ -37,6 +38,36 @@ async function getAiClient() {
 }
 
 dotenv.config();
+
+const supabaseServiceUrl =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  process.env.VITE_SUPABASE_URL ||
+  '';
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY ||
+  process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  '';
+
+const isBackendSupabaseConfigured = Boolean(
+  supabaseServiceUrl &&
+  supabaseServiceKey &&
+  supabaseServiceUrl.startsWith('http')
+);
+
+let backendSupabaseClient: SupabaseClient | null = null;
+if (isBackendSupabaseConfigured) {
+  backendSupabaseClient = createClient(supabaseServiceUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false }
+  });
+} else {
+  console.warn('[Backend Supabase] Service role key or Supabase URL is not configured. Backend Supabase routes are disabled.');
+}
+
+function getBackendSupabase(): SupabaseClient | null {
+  return backendSupabaseClient;
+}
 
 // Lazy initialization of Resend client for real email dispatches
 let resendClient: Resend | null = null;
@@ -1000,6 +1031,63 @@ app.use("/api/conversations", generalLimiter);
 app.use("/api/mentorship-pairs", generalLimiter);
 app.use("/api/forum-threads", generalLimiter);
 app.use("/api/circle-states", generalLimiter);
+app.use("/api/supabase", generalLimiter);
+
+// API Route: Backend Supabase health and diagnostic probe
+app.get("/api/supabase/health", async (req, res) => {
+  const supabase = getBackendSupabase();
+  if (!supabase) {
+    return res.status(503).json({
+      status: "unconfigured",
+      message: "Backend Supabase is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in environment variables."
+    });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('big_members')
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      console.error('Backend Supabase health probe failed:', error);
+      return res.status(500).json({ status: 'error', message: 'Failed to query Supabase', details: error.message || error });
+    }
+
+    res.json({
+      status: 'ok',
+      tablesReachable: true,
+      sampleRows: Array.isArray(data) ? data.length : 0,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error: any) {
+    console.error('Backend Supabase health probe exception:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Backend Supabase health probe exception',
+      details: error.message || error
+    });
+  }
+});
+
+app.get("/api/supabase/members", async (req, res) => {
+  const supabase = getBackendSupabase();
+  if (!supabase) {
+    return res.status(503).json({ error: "Backend Supabase is not configured." });
+  }
+
+  try {
+    const { data, error } = await supabase.from('big_members').select('*').order('points', { ascending: false });
+    if (error) {
+      console.error('Backend Supabase members fetch failed:', error);
+      return res.status(500).json({ error: error.message || 'Failed to load members from Supabase' });
+    }
+    res.json(data);
+  } catch (error: any) {
+    console.error('Backend Supabase members fetch exception:', error);
+    res.status(500).json({ error: error.message || 'Backend Supabase fetch exception' });
+  }
+});
 
 // API Route: Health check probing server uptime and database connectivity
 app.get("/api/health", (req, res) => {

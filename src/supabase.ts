@@ -18,9 +18,16 @@ const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta a
 const supabasePublicKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 let globalSupabaseBroken = false;
+let globalTablesMissing = false;
 
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabasePublicKey && supabaseUrl.startsWith('http') && !globalSupabaseBroken);
+  return !!(
+    supabaseUrl &&
+    supabasePublicKey &&
+    supabaseUrl.startsWith('http') &&
+    !globalSupabaseBroken &&
+    !globalTablesMissing
+  );
 };
 
 // Create the client with the public Supabase key (publishable or anon) only.
@@ -28,8 +35,6 @@ export const isSupabaseConfigured = () => {
 export const supabase = isSupabaseConfigured()
   ? createClient(supabaseUrl, supabasePublicKey)
   : null;
-
-let globalTablesMissing = false;
 
 export const areTablesMissing = () => globalTablesMissing;
 
@@ -46,6 +51,11 @@ function handleSupabaseError(context: string, error: any) {
     errCode === 'PGRST116' ||
     errCode === '42P01';
 
+  const isMissingColumn =
+    errMsg.includes("Could not find the '") && errMsg.includes("' column") ||
+    errMsg.includes('column') && errMsg.includes('schema cache') ||
+    errCode === '42703';
+
   const isInvalidCredentials =
     errMsg.toLowerCase().includes('invalid api key') ||
     errMsg.toLowerCase().includes('invalid key') ||
@@ -54,9 +64,10 @@ function handleSupabaseError(context: string, error: any) {
     errCode === '401' ||
     errCode === 'invalid_api_key';
 
-  if (isMissingTable) {
+  if (isMissingTable || isMissingColumn) {
     globalTablesMissing = true;
-    console.warn(`[Supabase Status] Tables have not been initialized yet in your Supabase project. Setup is required via SQL. (${context})`);
+    globalSupabaseBroken = true;
+    console.warn(`[Supabase Status] Supabase schema is missing expected tables/columns. Setup is required via SQL. (${context})`);
   } else if (isInvalidCredentials) {
     globalSupabaseBroken = true;
     console.warn(`[Supabase Status] Invalid Supabase credentials or unauthorized access detected. Falling back to local storage. (${context})`);
@@ -64,6 +75,71 @@ function handleSupabaseError(context: string, error: any) {
     // Normal error, log gently
     console.warn(`[Supabase Warning] ${context}:`, errMsg || errDetails || errCode);
   }
+}
+
+const supabaseSeedState = {
+  members: { running: false, done: false },
+  events: { running: false, done: false }
+};
+
+function cleanMemberForDb(member: Member) {
+  return {
+    id: member.id,
+    name: member.name,
+    email: member.email ?? null,
+    avatar: member.avatar,
+    title: member.title,
+    city: member.city,
+    rank: member.rank,
+    skills: member.skills ?? [],
+    interests: member.interests ?? [],
+    bio: member.bio,
+    points: member.points ?? 0,
+    badges: member.badges ?? [],
+    business_stage: member.business_stage ?? null,
+    mentoring_capacity: member.mentoring_capacity ?? null,
+    followingIds: member.followingIds ?? [],
+    followerIds: member.followerIds ?? [],
+    circleIds: member.circleIds ?? [],
+    isSuperAdmin: member.isSuperAdmin ?? false,
+    isModerator: member.isModerator ?? false,
+    joinedAt: member.joinedAt ?? null,
+    website: member.website ?? null,
+    linkedinUrl: member.linkedinUrl ?? null,
+    githubUrl: member.githubUrl ?? null,
+    twitterUrl: member.twitterUrl ?? null,
+    company: member.company ?? null,
+    industry: member.industry ?? null,
+    certifications: member.certifications ?? [],
+    endorsements: member.endorsements ?? [],
+    recommendations: member.recommendations ?? [],
+    experience: member.experience ?? [],
+    education: member.education ?? [],
+    biometricCredentialId: member.biometricCredentialId ?? null,
+    passwordHash: member.passwordHash ?? null,
+    passwordSalt: member.passwordSalt ?? null,
+    pinHash: member.pinHash ?? null,
+    pinSalt: member.pinSalt ?? null
+  };
+}
+
+function cleanEventForDb(event: Event) {
+  return {
+    id: event.id,
+    title: event.title,
+    date: event.date,
+    time: event.time,
+    location: event.location,
+    type: event.type,
+    attendees: event.attendees ?? 0,
+    attendeeNames: event.attendeeNames ?? [],
+    rsvped: event.rsvped ?? false,
+    description: event.description,
+    image: event.image ?? null,
+    category: event.category ?? null,
+    reminded: event.reminded ?? false,
+    createdBy: event.createdBy ?? null
+  };
 }
 
 /**
@@ -97,22 +173,27 @@ export const supabaseService = {
   },
 
   async seedMembers(members: Member[]) {
-    if (!supabase || globalTablesMissing) return;
+    if (!supabase || globalTablesMissing || supabaseSeedState.members.done || supabaseSeedState.members.running) return;
+    supabaseSeedState.members.running = true;
     try {
-      // Clean insert
-      const { error } = await supabase.from('big_members').upsert(members, { onConflict: 'id' });
+      const mappedMembers = members.map(cleanMemberForDb);
+      const { error } = await supabase.from('big_members').upsert(mappedMembers, { onConflict: 'id' });
       if (error) {
         handleSupabaseError('seedMembers', error);
+      } else {
+        supabaseSeedState.members.done = true;
       }
     } catch (e: any) {
       handleSupabaseError('seedMembers catch', e);
+    } finally {
+      supabaseSeedState.members.running = false;
     }
   },
 
   async saveMember(member: Member) {
     if (!supabase || globalTablesMissing) return;
     try {
-      const { error } = await supabase.from('big_members').upsert(member, { onConflict: 'id' });
+      const { error } = await supabase.from('big_members').upsert(cleanMemberForDb(member), { onConflict: 'id' });
       if (error) {
         handleSupabaseError('saveMember', error);
       }
@@ -217,21 +298,27 @@ export const supabaseService = {
   },
 
   async seedEvents(events: Event[]) {
-    if (!supabase || globalTablesMissing) return;
+    if (!supabase || globalTablesMissing || supabaseSeedState.events.done || supabaseSeedState.events.running) return;
+    supabaseSeedState.events.running = true;
     try {
-      const { error } = await supabase.from('big_events').upsert(events, { onConflict: 'id' });
+      const mappedEvents = events.map(cleanEventForDb);
+      const { error } = await supabase.from('big_events').upsert(mappedEvents, { onConflict: 'id' });
       if (error) {
         handleSupabaseError('seedEvents', error);
+      } else {
+        supabaseSeedState.events.done = true;
       }
     } catch (e: any) {
       handleSupabaseError('seedEvents catch', e);
+    } finally {
+      supabaseSeedState.events.running = false;
     }
   },
 
   async saveEvent(event: Event) {
     if (!supabase || globalTablesMissing) return;
     try {
-      const { error } = await supabase.from('big_events').upsert(event, { onConflict: 'id' });
+      const { error } = await supabase.from('big_events').upsert(cleanEventForDb(event), { onConflict: 'id' });
       if (error) {
         handleSupabaseError('saveEvent', error);
       }
@@ -437,7 +524,26 @@ create table if not exists big_members (
   mentoring_capacity text,
   "followingIds" text[] default '{}'::text[],
   "followerIds" text[] default '{}'::text[],
-  "circleIds" text[] default '{}'::text[]
+  "circleIds" text[] default '{}'::text[],
+  isSuperAdmin boolean default false,
+  isModerator boolean default false,
+  joinedAt text,
+  website text,
+  linkedinUrl text,
+  githubUrl text,
+  twitterUrl text,
+  company text,
+  industry text,
+  certifications text[] default '{}'::text[],
+  endorsements jsonb default '[]'::jsonb,
+  recommendations jsonb default '[]'::jsonb,
+  experience jsonb default '[]'::jsonb,
+  education jsonb default '[]'::jsonb,
+  biometricCredentialId text,
+  passwordHash text,
+  passwordSalt text,
+  pinHash text,
+  pinSalt text
 );
 
 -- 2. Create table for Posts
@@ -450,7 +556,16 @@ create table if not exists big_posts (
   "likes_ids" jsonb default '[]'::jsonb,
   comments jsonb default '[]'::jsonb,
   liked boolean default false,
-  "circleId" text
+  "circleId" text,
+  tag text,
+  tags text[] default '{}'::text[],
+  imageUrl text,
+  reactions jsonb default '[]'::jsonb,
+  commentsDisabled boolean default false,
+  repostsCount integer default 0,
+  sharesCount integer default 0,
+  scheduledFor text,
+  status text
 );
 
 -- 3. Create table for Events
@@ -462,8 +577,13 @@ create table if not exists big_events (
   location text,
   type text,
   attendees integer default 0,
+  attendeeNames text[] default '{}'::text[],
   rsvped boolean default false,
-  description text
+  description text,
+  image text,
+  category text,
+  reminded boolean default false,
+  createdBy text
 );
 
 -- 4. Create table for Challenges
@@ -475,7 +595,8 @@ create table if not exists big_challenges (
   progress integer default 0,
   completed boolean default false,
   badge text,
-  category text
+  category text,
+  target text
 );
 
 -- 5. Create table for Conversations
@@ -495,6 +616,98 @@ create table if not exists big_mentorship_pairs (
   status text,
   "startDate" text
 );
+
+-- Ensure existing tables have all current app columns so old installs can migrate safely
+-- Members
+alter table if exists big_members add column if not exists email text;
+alter table if exists big_members add column if not exists avatar text;
+alter table if exists big_members add column if not exists title text;
+alter table if exists big_members add column if not exists city text;
+alter table if exists big_members add column if not exists rank text;
+alter table if exists big_members add column if not exists skills text[] default '{}'::text[];
+alter table if exists big_members add column if not exists interests text[] default '{}'::text[];
+alter table if exists big_members add column if not exists bio text;
+alter table if exists big_members add column if not exists points integer default 0;
+alter table if exists big_members add column if not exists badges text[] default '{}'::text[];
+alter table if exists big_members add column if not exists business_stage text;
+alter table if exists big_members add column if not exists mentoring_capacity text;
+alter table if exists big_members add column if not exists "followingIds" text[] default '{}'::text[];
+alter table if exists big_members add column if not exists "followerIds" text[] default '{}'::text[];
+alter table if exists big_members add column if not exists "circleIds" text[] default '{}'::text[];
+alter table if exists big_members add column if not exists isSuperAdmin boolean default false;
+alter table if exists big_members add column if not exists isModerator boolean default false;
+alter table if exists big_members add column if not exists joinedAt text;
+alter table if exists big_members add column if not exists website text;
+alter table if exists big_members add column if not exists linkedinUrl text;
+alter table if exists big_members add column if not exists githubUrl text;
+alter table if exists big_members add column if not exists twitterUrl text;
+alter table if exists big_members add column if not exists company text;
+alter table if exists big_members add column if not exists industry text;
+alter table if exists big_members add column if not exists certifications text[] default '{}'::text[];
+alter table if exists big_members add column if not exists endorsements jsonb default '[]'::jsonb;
+alter table if exists big_members add column if not exists recommendations jsonb default '[]'::jsonb;
+alter table if exists big_members add column if not exists experience jsonb default '[]'::jsonb;
+alter table if exists big_members add column if not exists education jsonb default '[]'::jsonb;
+alter table if exists big_members add column if not exists biometricCredentialId text;
+alter table if exists big_members add column if not exists passwordHash text;
+alter table if exists big_members add column if not exists passwordSalt text;
+alter table if exists big_members add column if not exists pinHash text;
+alter table if exists big_members add column if not exists pinSalt text;
+
+-- Posts
+alter table if exists big_posts add column if not exists author jsonb;
+alter table if exists big_posts add column if not exists content text;
+alter table if exists big_posts add column if not exists timestamp text;
+alter table if exists big_posts add column if not exists likes integer default 0;
+alter table if exists big_posts add column if not exists "likes_ids" jsonb default '[]'::jsonb;
+alter table if exists big_posts add column if not exists comments jsonb default '[]'::jsonb;
+alter table if exists big_posts add column if not exists liked boolean default false;
+alter table if exists big_posts add column if not exists "circleId" text;
+alter table if exists big_posts add column if not exists tag text;
+alter table if exists big_posts add column if not exists tags text[] default '{}'::text[];
+alter table if exists big_posts add column if not exists imageUrl text;
+alter table if exists big_posts add column if not exists reactions jsonb default '[]'::jsonb;
+alter table if exists big_posts add column if not exists commentsDisabled boolean default false;
+alter table if exists big_posts add column if not exists repostsCount integer default 0;
+alter table if exists big_posts add column if not exists sharesCount integer default 0;
+alter table if exists big_posts add column if not exists scheduledFor text;
+alter table if exists big_posts add column if not exists status text;
+
+-- Events
+alter table if exists big_events add column if not exists date text;
+alter table if exists big_events add column if not exists time text;
+alter table if exists big_events add column if not exists location text;
+alter table if exists big_events add column if not exists type text;
+alter table if exists big_events add column if not exists attendees integer default 0;
+alter table if exists big_events add column if not exists attendeeNames text[] default '{}'::text[];
+alter table if exists big_events add column if not exists rsvped boolean default false;
+alter table if exists big_events add column if not exists description text;
+alter table if exists big_events add column if not exists image text;
+alter table if exists big_events add column if not exists category text;
+alter table if exists big_events add column if not exists reminded boolean default false;
+alter table if exists big_events add column if not exists createdBy text;
+
+-- Challenges
+alter table if exists big_challenges add column if not exists title text;
+alter table if exists big_challenges add column if not exists description text;
+alter table if exists big_challenges add column if not exists reward text;
+alter table if exists big_challenges add column if not exists progress integer default 0;
+alter table if exists big_challenges add column if not exists completed boolean default false;
+alter table if exists big_challenges add column if not exists badge text;
+alter table if exists big_challenges add column if not exists category text;
+alter table if exists big_challenges add column if not exists target text;
+
+-- Conversations
+alter table if exists big_conversations add column if not exists member jsonb;
+alter table if exists big_conversations add column if not exists messages jsonb default '[]'::jsonb;
+alter table if exists big_conversations add column if not exists unread boolean default false;
+
+-- Mentorship Pairs
+alter table if exists big_mentorship_pairs add column if not exists mentor jsonb;
+alter table if exists big_mentorship_pairs add column if not exists mentee jsonb;
+alter table if exists big_mentorship_pairs add column if not exists topic text;
+alter table if exists big_mentorship_pairs add column if not exists status text;
+alter table if exists big_mentorship_pairs add column if not exists "startDate" text;
 
 -- Enable Row Level Security (optional, for production write access configure rules appropriately)
 alter table big_members enable row level security;

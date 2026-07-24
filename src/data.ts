@@ -137,6 +137,7 @@ export interface Event {
   image?: string;
   category?: string;
   reminded?: boolean;
+  createdBy?: string;
 }
 
 export interface Challenge {

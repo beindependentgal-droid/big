@@ -3,7 +3,19 @@ import express from "express";
 import { createServer as createViteServer } from "vite";
 import app from "./api/index";
 
-const PORT = 3000;
+const DEFAULT_PORT = Number(process.env.PORT || 3000);
+const portArgIndex = process.argv.findIndex((arg) => arg === "--port" || arg.startsWith("--port="));
+const parsedPortValue = portArgIndex >= 0
+  ? Number.parseInt(
+      portArgIndex + 1 < process.argv.length
+        ? process.argv[portArgIndex + 1]
+        : process.argv[portArgIndex].split("=")[1] || "",
+      10
+    )
+  : Number.NaN;
+const PORT = Number.isFinite(parsedPortValue) && parsedPortValue > 0
+  ? parsedPortValue
+  : DEFAULT_PORT;
 
 async function startServer() {
   // Vite middleware for development

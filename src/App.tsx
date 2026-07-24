@@ -771,18 +771,12 @@ export default function App() {
     if (members.length > 0) {
       apiService.syncState({ members }).catch(err => console.warn('Failed to sync members to backend:', err));
     }
-    if (isSupabaseConfigured() && members.length > 0) {
-      supabaseService.seedMembers(members);
-    }
   }, [members]);
 
   useEffect(() => {
     localStorage.setItem('big_v2_events', JSON.stringify(events));
     if (events.length > 0) {
       apiService.syncState({ events }).catch(err => console.warn('Failed to sync events to backend:', err));
-    }
-    if (isSupabaseConfigured() && events.length > 0) {
-      supabaseService.seedEvents(events);
     }
   }, [events]);
 
@@ -836,17 +830,11 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('big_v2_user_points', userPoints.toString());
     apiService.syncState({ userPoints }).catch(err => console.warn('Failed to sync userPoints to backend:', err));
-    if (isSupabaseConfigured()) {
-      supabaseService.saveMember({ ...currentUser, points: userPoints, badges: userBadges });
-    }
   }, [userPoints]);
 
   useEffect(() => {
     localStorage.setItem('big_v2_user_badges', JSON.stringify(userBadges));
     apiService.syncState({ userBadges }).catch(err => console.warn('Failed to sync userBadges to backend:', err));
-    if (isSupabaseConfigured()) {
-      supabaseService.saveMember({ ...currentUser, points: userPoints, badges: userBadges });
-    }
   }, [userBadges]);
 
   useEffect(() => {
