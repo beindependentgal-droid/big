@@ -18,7 +18,11 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
   
   // Security API state
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
 
   // Biometric Modal state
   const [bioModalOpen, setBioModalOpen] = useState(false);
@@ -40,10 +44,10 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
       }
 
       if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
-        const { token, user } = event.data;
+        const { token, user, isNewUser = false } = event.data;
         localStorage.setItem('big_v2_session_token', token);
         localStorage.setItem('big_v2_current_user_email', user.email);
-        onAuthSuccess(false, user.name, user.email);
+        onAuthSuccess(isNewUser, user.name, user.email);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -53,6 +57,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setSuccess(null);
     if (!email || !password) return;
     if (!isLogin && !name) return;
 
@@ -125,6 +130,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
 
   const handleGoogleSignIn = async () => {
     setError(null);
+    setSuccess(null);
     setLoading(true);
     try {
       const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(window.location.origin)}`);
@@ -166,7 +172,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
         const simData = await registerRes.json();
         localStorage.setItem('big_v2_session_token', simData.token);
         localStorage.setItem('big_v2_current_user_email', simData.user.email);
-        onAuthSuccess(false, simData.user.name, simData.user.email);
+        onAuthSuccess(simData.isNewUser ?? false, simData.user.name, simData.user.email);
       } else {
         // Real Google OAuth Popup
         const authWindow = window.open(
@@ -181,6 +187,51 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
       }
     } catch (err: any) {
       setError(err.message || 'Google Sign-In failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordResetRequest = async () => {
+    setError(null);
+    setSuccess(null);
+    if (!email) {
+      setError('Please enter your email address to receive a reset code.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiService.requestOtp(email, 'Password Reset');
+      setSuccess('A secure reset code was sent to your email. Enter it below to choose a new password.');
+    } catch (err: any) {
+      setError(err.message || 'Could not dispatch your reset code.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordResetSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    if (!email || !otpCode || !newPassword) {
+      setError('Please fill in your email, the reset code, and your new password.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const result = await apiService.resetPassword(email, otpCode, newPassword);
+      setSuccess(result.message || 'Password reset successful.');
+      setIsResettingPassword(false);
+      setOtpCode('');
+      setNewPassword('');
+      setPassword('');
+      setIsLogin(true);
+    } catch (err: any) {
+      setError(err.message || 'Password reset failed.');
     } finally {
       setLoading(false);
     }
@@ -209,6 +260,91 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
             </div>
           )}
 
+          {success && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-3 text-xs font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+              {success}
+            </div>
+          )}
+
+          {isResettingPassword ? (
+            <form onSubmit={handlePasswordResetSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-primary focus:border-secondary focus:outline-none"
+                    placeholder="sister@example.com"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Reset Code</label>
+                <input
+                  type="text"
+                  required
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-primary focus:border-secondary focus:outline-none"
+                  placeholder="123456"
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">New Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-primary focus:border-secondary focus:outline-none"
+                    placeholder="Choose a new password"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-[0.15em] text-white transition-all hover:bg-primary/95 disabled:opacity-50"
+                >
+                  {loading ? 'Updating...' : 'Reset Password'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsResettingPassword(false);
+                    setOtpCode('');
+                    setNewPassword('');
+                  }}
+                  className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600"
+                >
+                  Back
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={handlePasswordResetRequest}
+                disabled={loading}
+                className="w-full text-sm font-semibold text-secondary underline"
+              >
+                Send me a new reset code
+              </button>
+            </form>
+          ) : (
+            <>
           {!isLogin && (
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Full Name</label>
@@ -291,6 +427,20 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
 
+            {isLogin && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResettingPassword(true);
+                  setSuccess(null);
+                  setError(null);
+                }}
+                className="w-full text-sm font-semibold text-secondary underline"
+              >
+                Forgot password?
+              </button>
+            )}
+
             <div className="relative flex py-2 items-center">
               <div className="flex-grow border-t border-slate-150 dark:border-slate-800"></div>
               <span className="flex-shrink mx-4 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500">or continue with</span>
@@ -311,7 +461,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
                   <path d="M12,5.16c1.32,0 2.51,0.45 3.44,1.35l2.58,-2.58C16.46,2.51 14.43,1.7 12,1.7C7.64,1.7 3.89,4.82 2.38,7.82l4.09,3.18C7.25,6.89 9.43,5.16 12,5.16z" fill="#EA4335" />
                 </g>
               </svg>
-              <span>Sign in with Google</span>
+              <span>{isLogin ? 'Continue with Google' : 'Sign up with Google'}</span>
             </button>
 
             {isLogin && (
@@ -326,6 +476,8 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
               </button>
             )}
           </div>
+            </>
+          )}
         </form>
 
         <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 text-center">
@@ -333,7 +485,14 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
             {isLogin ? "Don't have an account?" : "Already a member?"}
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setIsResettingPassword(false);
+                setError(null);
+                setSuccess(null);
+                setOtpCode('');
+                setNewPassword('');
+              }}
               className="ml-2 font-bold text-secondary hover:underline uppercase tracking-wide text-xs"
             >
               {isLogin ? 'Sign Up' : 'Log In'}

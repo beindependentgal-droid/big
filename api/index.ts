@@ -15,6 +15,7 @@ import {
   writeAuditLog,
   SimulatedEmail
 } from "./_db";
+import { buildOtpEmailPayload, buildPasswordResetEmailPayload, buildWelcomeEmailPayload } from "./email";
 
 let aiClient: any | null = null;
 async function getAiClient() {
@@ -301,6 +302,12 @@ app.post("/api/auth/register", authLimiter, (req, res) => {
     });
 
     saveDb(db);
+    void sendMailWithResend({
+      to: cleanEmail,
+      subject: `🌸 Welcome to Be Independent Gal (BIG) Platform, ${name}!`,
+      text: buildWelcomeEmailPayload(name).text,
+      html: buildWelcomeEmailPayload(name).html
+    }).catch((error) => console.warn('Welcome email delivery failed:', error));
 
     writeAuditLog(userId, cleanEmail, "Account registration successful", req.ip || 'unknown');
 
@@ -554,6 +561,13 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
       });
 
       saveDb(db);
+      const welcomePayload = buildWelcomeEmailPayload(name);
+      void sendMailWithResend({
+        to: cleanEmail,
+        subject: welcomePayload.subject,
+        text: welcomePayload.text,
+        html: welcomePayload.html
+      }).catch((error) => console.warn('Google welcome email delivery failed:', error));
     }
 
     const token = createSessionToken(user.id, cleanEmail);
@@ -644,6 +658,13 @@ app.post("/api/auth/google/simulate", authLimiter, (req, res) => {
       });
 
       saveDb(db);
+      const welcomePayload = buildWelcomeEmailPayload(resolvedName);
+      void sendMailWithResend({
+        to: cleanEmail,
+        subject: welcomePayload.subject,
+        text: welcomePayload.text,
+        html: welcomePayload.html
+      }).catch((error) => console.warn('Simulated Google welcome email delivery failed:', error));
     }
 
     const token = createSessionToken(user.id, cleanEmail);
@@ -655,8 +676,30 @@ app.post("/api/auth/google/simulate", authLimiter, (req, res) => {
   }
 });
 
+async function sendMailWithResend(params: { to: string; subject: string; text: string; html: string }) {
+  const resend = getResendClient();
+  if (!resend) {
+    throw new Error('Resend is not configured');
+  }
+
+  const fromEmail = getResendFromEmail();
+  const response = await resend.emails.send({
+    from: fromEmail,
+    to: [params.to],
+    subject: params.subject,
+    text: params.text,
+    html: params.html
+  });
+
+  if (response.error) {
+    throw new Error(response.error.message || JSON.stringify(response.error));
+  }
+
+  return response;
+}
+
 // 4. Request OTP (One-Time Passcode)
-app.post("/api/auth/request-otp", authLimiter, (req, res) => {
+app.post("/api/auth/request-otp", authLimiter, async (req, res) => {
   try {
     const { email, actionName } = req.body;
     if (!email) {
@@ -690,22 +733,17 @@ app.post("/api/auth/request-otp", authLimiter, (req, res) => {
     db.simulatedEmails.unshift(emailEntry);
     saveDb(db);
 
-    // Send real email via Resend if configured
-    const resend = getResendClient();
-    if (resend) {
-      const fromEmail = getResendFromEmail();
-      resend.emails.send({
-        from: fromEmail,
-        to: [email],
-        subject,
-        text: body,
-        html: `<div style="font-family: Arial, sans-serif; max-width: 500px; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
-          <h2 style="color: #be185d; margin-top: 0;">🔐 One-Time Passcode</h2>
-          <p>Your security authorization code for <strong>${actionName || 'Sensitive Action'}</strong> is:</p>
-          <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; padding: 12px; background: #f1f5f9; text-align: center; border-radius: 8px; margin: 16px 0; color: #0f172a;">${code}</div>
-          <p style="font-size: 12px; color: #64748b;">This code expires in 5 minutes. Do not share it with anyone.</p>
-        </div>`
-      }).catch(err => console.error("Resend OTP dispatch error:", err));
+    const payload = buildOtpEmailPayload(code, actionName || 'Sensitive Action');
+
+    try {
+      await sendMailWithResend({
+        to: email,
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html
+      });
+    } catch (error) {
+      console.warn('Resend OTP dispatch failed, continuing with local fallback:', error);
     }
 
     console.log(`[SECURITY OTP DISPATCHED TO ${email}]: Code is ${code}`);
@@ -749,6 +787,68 @@ app.post("/api/auth/verify-otp", authLimiter, (req, res) => {
   } catch (error) {
     console.error("Verify OTP error:", error);
     res.status(500).json({ error: "Internal verification failed" });
+  }
+});
+
+// 6. Reset password with OTP verification
+app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
+  try {
+    const { email, code, password } = req.body;
+    if (!email || !code || !password) {
+      return res.status(400).json({ error: "Email, code, and a new password are required" });
+    }
+
+    if (typeof password !== 'string' || password.length < 8) {
+      return res.status(400).json({ error: "Password must be at least 8 characters long" });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const otpInfo = activeOTPs.get(cleanEmail);
+
+    if (!otpInfo) {
+      return res.status(400).json({ error: "No verification code has been requested for this email" });
+    }
+
+    if (Date.now() > otpInfo.expires) {
+      activeOTPs.delete(cleanEmail);
+      return res.status(400).json({ error: "Verification code has expired. Please request a new one." });
+    }
+
+    const enteredHash = crypto.createHash('sha256').update(code.trim()).digest('hex');
+    if (enteredHash !== otpInfo.hash) {
+      return res.status(400).json({ error: "Invalid verification code. Please check your simulated mailbox." });
+    }
+
+    activeOTPs.delete(cleanEmail);
+
+    const db = loadDb();
+    const user = db.members.find(m => m.email?.toLowerCase() === cleanEmail);
+    if (!user) {
+      return res.status(404).json({ error: "No account was found for this email" });
+    }
+
+    const salt = generateSalt();
+    user.passwordHash = hashPassword(password, salt);
+    user.passwordSalt = salt;
+    saveDb(db);
+
+    const resetPayload = buildPasswordResetEmailPayload(code.trim());
+    try {
+      await sendMailWithResend({
+        to: cleanEmail,
+        subject: resetPayload.subject,
+        text: resetPayload.text,
+        html: resetPayload.html
+      });
+    } catch (error) {
+      console.warn('Resend password reset confirmation failed:', error);
+    }
+
+    writeAuditLog(user.id, cleanEmail, "Password reset successful", req.ip || 'unknown');
+    res.json({ success: true, message: "Your password was reset successfully." });
+  } catch (error) {
+    console.error("Reset password error:", error);
+    res.status(500).json({ error: "Failed to reset password" });
   }
 });
 

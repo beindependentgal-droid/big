@@ -78,7 +78,7 @@ export const apiService = {
   async getFullState(): Promise<FullBackendState> {
     const res = await fetch('/api/db');
     if (!res.ok) {
-      const errorBody = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      const errorBody = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(errorBody.error || 'Failed to load database from server');
     }
     return parseApiResponseBody<FullBackendState>(res);
@@ -97,7 +97,7 @@ export const apiService = {
       body: JSON.stringify(partialState)
     });
     if (!res.ok) {
-      const errorBody = await parseApiResponseBody<{ error?: string; state?: FullBackendState }>(res).catch(() => ({}));
+      const errorBody = await parseApiResponseBody<{ error?: string; state?: FullBackendState }>(res).catch(() => ({}) as { error?: string; state?: FullBackendState });
       throw new Error(errorBody.error || 'Failed to sync state to server');
     }
     const data = await parseApiResponseBody<{ state?: FullBackendState }>(res);
@@ -214,7 +214,7 @@ export const apiService = {
       body: JSON.stringify({ name, email, password, biometricCredentialId })
     });
     if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(err.error || 'Registration failed');
     }
     return parseApiResponseBody<{ token: string; user: Member }>(res);
@@ -228,7 +228,7 @@ export const apiService = {
       body: JSON.stringify({ biometricCredentialId })
     });
     if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(err.error || 'Biometric enrollment failed');
     }
     return parseApiResponseBody<{ success: boolean; user: Member }>(res);
@@ -242,7 +242,7 @@ export const apiService = {
       body: JSON.stringify({ email, biometricCredentialId })
     });
     if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(err.error || 'Biometric login failed');
     }
     return parseApiResponseBody<{ token: string; user: Member }>(res);
@@ -256,7 +256,7 @@ export const apiService = {
       body: JSON.stringify({ email, password })
     });
     if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(err.error || 'Login failed');
     }
     return parseApiResponseBody<{ token: string; user: Member }>(res);
@@ -279,7 +279,7 @@ export const apiService = {
       body: JSON.stringify({ email, actionName })
     });
     if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(err.error || 'Failed to dispatch code');
     }
     return parseApiResponseBody<{ success: boolean; message: string }>(res);
@@ -293,10 +293,24 @@ export const apiService = {
       body: JSON.stringify({ email, code })
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
       throw new Error(err.error || 'Invalid code');
     }
-    return res.json();
+    return parseApiResponseBody<{ success: boolean }>(res);
+  },
+
+  // Reset password with a previously requested OTP code
+  async resetPassword(email: string, code: string, password: string): Promise<{ success: boolean; message: string }> {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password })
+    });
+    if (!res.ok) {
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}) as { error?: string });
+      throw new Error(err.error || 'Password reset failed');
+    }
+    return parseApiResponseBody<{ success: boolean; message: string }>(res);
   },
 
   // Set Security PIN securely on the server
