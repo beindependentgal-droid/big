@@ -874,39 +874,49 @@ export function AdminDashboardView({
     const request = circleRequests.find(r => r.id === requestId);
     if (!request) return;
 
-    // Create the new circle
-    const newCircle: Circle = {
-      id: `circle-${Date.now()}`,
-      name: request.circleName,
-      description: request.description,
-      category: request.category as any,
-      memberCount: 1,
-      image: '/images/african_women_community_circle_1784704135356.jpg',
-      createdBy: request.userId,
-      isJoined: true,
-      moderators: [request.userId],
-      rules: ['Respect sisters', 'No spam', 'Support each other'],
-      permissions: {
-        whoCanPost: 'anyone',
-        whoCanInvite: 'anyone',
-        isPrivate: false
-      }
-    };
+    if (request.type === 'create') {
+      const newCircle: Circle = {
+        id: `circle-${Date.now()}`,
+        name: request.circleName,
+        description: request.description,
+        category: request.category as any,
+        memberCount: 1,
+        image: '/images/african_women_community_circle_1784704135356.jpg',
+        createdBy: request.userId,
+        isJoined: true,
+        moderators: [request.userId],
+        rules: ['Respect sisters', 'No spam', 'Support each other'],
+        permissions: {
+          whoCanPost: 'anyone',
+          whoCanInvite: 'anyone',
+          isPrivate: false
+        }
+      };
 
-    setCircles(prev => [...prev, newCircle]);
+      setCircles(prev => [...prev, newCircle]);
+      setNotifications(prev => [
+        { id: `not-circle-approved-${Date.now()}`, title: `🎉 Great news! The circle "${request.circleName}" has been approved and is now live!`, read: false },
+        ...prev
+      ]);
+      logActivity('Circle Created', `Circle "${request.circleName}" created by ${request.userName}`);
+      setSyncLogs(prev => [
+        `Approved circle creation request: "${request.circleName}" by ${request.userName}.`,
+        ...prev
+      ]);
+    } else if (request.type === 'join') {
+      setCircles(prev => prev.map(c => c.id === request.circleId ? { ...c, memberCount: (c.memberCount || 0) + 1, isJoined: c.id === request.circleId && request.userId === currentUser.id ? true : c.isJoined } : c));
+      setNotifications(prev => [
+        { id: `not-join-approved-${Date.now()}`, title: `✅ ${request.userName}'s request to join ${request.circleName} has been approved.`, read: false },
+        ...prev
+      ]);
+      logActivity('Circle Join Approved', `Join request for ${request.circleName} by ${request.userName} approved.`);
+      setSyncLogs(prev => [
+        `Approved join request for "${request.circleName}" by ${request.userName}.`,
+        ...prev
+      ]);
+    }
+
     setCircleRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'approved' } : r));
-    
-    setNotifications(prev => [
-      { id: `not-circle-approved-${Date.now()}`, title: `🎉 Great news! The circle "${request.circleName}" has been approved and is now live!`, read: false },
-      ...prev
-    ]);
-
-    setSyncLogs(prev => [
-      `Approved circle request: "${request.circleName}" by ${request.userName}.`,
-      ...prev
-    ]);
-    
-    logActivity('Circle Created', `Circle "${request.circleName}" created by ${request.userName}`);
   };
 
   // Action: Reject Circle Request

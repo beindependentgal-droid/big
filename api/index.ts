@@ -1139,6 +1139,17 @@ app.post("/api/db/sync", authenticateToken, (req, res) => {
       db.impactStories = clientState.impactStories;
     }
 
+    if (clientState.circleRequests && Array.isArray(clientState.circleRequests)) {
+      db.circleRequests = clientState.circleRequests;
+    }
+
+    if (clientState.circleStates && typeof clientState.circleStates === 'object') {
+      db.circleStates = {
+        ...db.circleStates,
+        ...clientState.circleStates
+      };
+    }
+
     saveDb(db);
     res.json({ success: true, state: db });
   } catch (error: any) {

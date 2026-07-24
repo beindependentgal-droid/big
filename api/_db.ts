@@ -21,7 +21,8 @@ import {
   Campaign,
   Donation,
   MonthlySupporter,
-  ImpactStory
+  ImpactStory,
+  CircleRequest
 } from "../src/data";
 
 const LOCAL_DB_FILE = path.join(process.cwd(), "api", "_db.json");
@@ -324,6 +325,7 @@ export interface ApplicationState {
   mentorshipPairs: MentorshipPair[];
   forumThreads: ForumThread[];
   circleStates: Record<string, { status: string; moderation: string }>;
+  circleRequests: CircleRequest[];
   userPoints: number;
   userBadges: string[];
   followingIds: string[];
@@ -348,6 +350,7 @@ export const getInitialState = (): ApplicationState => {
     mentorshipPairs: INITIAL_MENTORSHIP_PAIRS,
     forumThreads: INITIAL_FORUM_THREADS,
     circleStates: {},
+    circleRequests: [],
     userPoints: 320,
     userBadges: ["confidence"],
     followingIds: ["m1", "m3"],

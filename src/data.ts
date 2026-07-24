@@ -74,9 +74,11 @@ export interface CircleRequest {
   id: string;
   userId: string;
   userName: string;
+  circleId?: string;
   circleName: string;
   description: string;
   category: string;
+  type: 'create' | 'join';
   status: 'pending' | 'approved' | 'rejected';
   timestamp: string;
 }

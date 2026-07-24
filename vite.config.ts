@@ -3,8 +3,13 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
+const buildTimestamp = new Date().toISOString();
+
 export default defineConfig(() => {
   return {
+    define: {
+      'import.meta.env.VITE_BUILD_TIMESTAMP': JSON.stringify(buildTimestamp),
+    },
     plugins: [react(), tailwindcss()],
     publicDir: path.resolve(__dirname, 'public'),
     resolve: {

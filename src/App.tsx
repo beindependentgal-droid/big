@@ -1369,6 +1369,8 @@ export default function App() {
               posts={posts}
               setPosts={setPosts}
               setCircles={setCircles}
+              circleRequests={circleRequests}
+              setCircleRequests={setCircleRequests}
               challenges={challenges}
               setChallenges={setChallenges}
               events={events}

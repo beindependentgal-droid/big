@@ -33,7 +33,7 @@ import {
   ShieldCheck,
   ShieldAlert
 } from 'lucide-react';
-import { Circle, Member, Post, Resource, Event, Challenge } from '../data';
+import { Circle, Member, Post, Resource, Event, Challenge, CircleRequest } from '../data';
 import { CircleGroupChat } from './CircleGroupChat';
 import { motion, AnimatePresence } from 'motion/react';
 import { copyToClipboard, formatTimeAgo } from '../lib/utils';
@@ -51,6 +51,8 @@ interface CircleHubProps {
   setPosts: (posts: Post[]) => void;
   setCircles: React.Dispatch<React.SetStateAction<Circle[]>>;
   setMembers: React.Dispatch<React.SetStateAction<Member[]>>;
+  circleRequests: CircleRequest[];
+  setCircleRequests: React.Dispatch<React.SetStateAction<CircleRequest[]>>;
   challenges: Challenge[];
   setChallenges?: React.Dispatch<React.SetStateAction<Challenge[]>>;
   events: Event[];
@@ -90,10 +92,14 @@ export function CircleHub({
   currentUser,
   addPoints,
   setCurrentView,
-  setSelectedConversationMember
+  setSelectedConversationMember,
+  circleRequests,
+  setCircleRequests
 }: CircleHubProps) {
   const [activeSubTab, setActiveSubTab] = useState<'feed' | 'chat' | 'members' | 'challenges' | 'events' | 'admin'>('feed');
   const [newPostText, setNewPostText] = useState('');
+  const [joinRequestMessage, setJoinRequestMessage] = useState('');
+  const [joinRequestSubmitted, setJoinRequestSubmitted] = useState(false);
 
   // Circle Edit States
   const [isEditing, setIsEditing] = useState(false);
@@ -114,6 +120,7 @@ export function CircleHub({
   const canPost = circle.permissions?.whoCanPost === 'anyone' || isCircleAdmin;
   const isMuted = circle.mutedMemberIds?.includes(currentUser.id);
   const isSuspended = circle.suspendedMemberIds?.includes(currentUser.id);
+  const existingJoinRequest = circleRequests.find(r => r.type === 'join' && r.circleId === circle.id && r.userId === currentUser.id && r.status === 'pending');
   const canActuallyPost = canPost && !isMuted && !isSuspended;
 
   const handleSaveCircle = () => {
@@ -213,6 +220,35 @@ export function CircleHub({
       };
     });
   });
+
+  const handleJoinRequest = () => {
+    if (circle.isJoined) {
+      onJoinCircle(circle.id);
+      return;
+    }
+
+    if (existingJoinRequest) {
+      setToast({ id: `join-request-duplicate-${Date.now()}`, title: 'Join request already pending.', desc: `Your request to join ${circle.name} is already under review.`, type: 'points' });
+      return;
+    }
+
+    const request: CircleRequest = {
+      id: `joinreq-${Date.now()}`,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      circleId: circle.id,
+      circleName: circle.name,
+      description: joinRequestMessage || `I would like to join the ${circle.name} circle to collaborate with other sisters.`,
+      category: circle.category,
+      type: 'join',
+      status: 'pending',
+      timestamp: new Date().toLocaleString()
+    };
+
+    setCircleRequests(prev => [...prev, request]);
+    setJoinRequestSubmitted(true);
+    setToast({ id: `join-request-${Date.now()}`, title: 'Join request sent', desc: `Your request to join ${circle.name} has been submitted.`, type: 'badge' });
+  };
 
   const handleCompleteChallenge = (id: string, rewardText: string, badgeCode: string) => {
     if (setChallenges) {
@@ -331,8 +367,18 @@ export function CircleHub({
                <button className="p-4 rounded-2xl bg-white/10 backdrop-blur-md text-white border border-white/10 hover:bg-white/20 transition-all">
                  <Share2 className="h-5 w-5" />
                </button>
-               <button className="px-8 py-4 rounded-2xl bg-white text-primary text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all">
-                 {circle.isJoined ? 'Exit Circle' : 'Join Circle'}
+               <button
+                 type="button"
+                 onClick={() => {
+                   if (circle.permissions?.isPrivate && !circle.isJoined) {
+                     handleJoinRequest();
+                     return;
+                   }
+                   onJoinCircle(circle.id);
+                 }}
+                 className="px-8 py-4 rounded-2xl bg-white text-primary text-[10px] font-black uppercase tracking-widest shadow-2xl hover:scale-105 active:scale-95 transition-all"
+               >
+                 {circle.isJoined ? 'Exit Circle' : circle.permissions?.isPrivate ? (existingJoinRequest ? 'Request Pending' : 'Request Invite') : 'Join Circle'}
                </button>
             </div>
           </div>
@@ -383,6 +429,46 @@ export function CircleHub({
                     <p className="text-[9px] font-black uppercase text-slate-400">Posts</p>
                  </div>
                </div>
+               {circle.permissions?.isPrivate && !circle.isJoined && (
+                 <div className="rounded-3xl border border-amber-100 bg-amber-50/80 p-5 mt-6 space-y-4">
+                   <div className="flex items-center gap-3 text-amber-700">
+                     <Shield className="h-5 w-5" />
+                     <span className="text-[10px] font-black uppercase tracking-widest">Private circle access</span>
+                   </div>
+                   <p className="text-[11px] text-slate-600 leading-relaxed">
+                     This circle is invite-only. Submit a short request to join and an admin will review it.
+                   </p>
+                   {!existingJoinRequest ? (
+                     <div className="space-y-3">
+                       <textarea
+                         value={joinRequestMessage}
+                         onChange={(e) => setJoinRequestMessage(e.target.value)}
+                         placeholder="Tell the circle leaders why you'd like to join..."
+                         className="w-full min-h-[96px] rounded-3xl border border-amber-200 bg-white p-4 text-sm text-slate-700 outline-none focus:border-amber-300"
+                       />
+                       <button
+                         type="button"
+                         onClick={handleJoinRequest}
+                         className="w-full rounded-2xl bg-amber-500 text-white px-6 py-3 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-all"
+                       >
+                         Send Join Request
+                       </button>
+                     </div>
+                   ) : (
+                     <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-700">
+                       Your request to join this circle is pending review. You will be notified when a moderator acts.
+                     </div>
+                   )}
+                 </div>
+               )}
+               {circle.permissions?.isPrivate && !circle.isJoined && (
+                 <div className="rounded-3xl border border-amber-100 bg-amber-50/70 p-4 text-sm text-amber-700 mt-4">
+                   <p className="font-black uppercase tracking-wider text-[10px]">Private Circle</p>
+                   <p className="mt-2 text-[11px] text-slate-600 leading-relaxed">
+                     {existingJoinRequest ? 'Your join request is pending review. You will be notified when access is granted.' : 'Submit a request to join this private circle. An admin will review your application shortly.'}
+                   </p>
+                 </div>
+               )}
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-100 p-8 shadow-sm space-y-6">

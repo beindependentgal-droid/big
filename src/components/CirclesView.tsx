@@ -44,14 +44,24 @@ export function CirclesView({
   const [showMarketing, setShowMarketing] = useState(!isAuthenticated);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'joined' | 'custom'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'learn' | 'connect' | 'earn' | 'thrive' | 'custom'>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [simulationNotice, setSimulationNotice] = useState<{message: string, type: string} | null>(null);
   
+  const categoryOptions = [
+    { id: 'all', label: 'All Circles' },
+    { id: 'learn', label: 'Learn' },
+    { id: 'connect', label: 'Connect' },
+    { id: 'earn', label: 'Earn' },
+    { id: 'thrive', label: 'Thrive' },
+    { id: 'custom', label: 'Custom' }
+  ] as const;
+
   // Create Circle State
   const [newCircleName, setNewCircleName] = useState('');
   const [newCircleDesc, setNewCircleDesc] = useState('');
-  const [newCircleCategory, setNewCircleCategory] = useState<'custom'>('custom');
+  const [newCircleCategory, setNewCircleCategory] = useState<'learn' | 'connect' | 'earn' | 'thrive' | 'custom'>('connect');
 
   // Eligibility Logic
   const userOwnedCircles = circles.filter(c => c.createdBy === currentUser.id);
@@ -74,17 +84,46 @@ export function CirclesView({
       activeFilter === 'all' ? true :
       activeFilter === 'joined' ? circle.isJoined :
       activeFilter === 'custom' ? circle.category === 'custom' : true;
+    const matchesCategory = selectedCategory === 'all' ? true : circle.category === selectedCategory;
     
-    return matchesSearch && matchesFilter;
+    return matchesSearch && matchesFilter && matchesCategory;
   });
 
   const handleJoinCircle = (e: React.MouseEvent, circleId: string) => {
     e.stopPropagation();
+    const circle = circles.find(c => c.id === circleId);
+    if (!circle) return;
+
+    if (circle.permissions?.isPrivate && !circle.isJoined) {
+      const existingRequest = circleRequests.find(r => r.type === 'join' && r.circleId === circleId && r.userId === currentUser.id && r.status === 'pending');
+      if (existingRequest) {
+        triggerNotice(`Your request to join ${circle.name} is already pending.`, 'info');
+        return;
+      }
+
+      const request: CircleRequest = {
+        id: `joinreq-${Date.now()}`,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        circleId,
+        circleName: circle.name,
+        description: `Please approve my request to join the ${circle.name} circle.`,
+        category: circle.category,
+        type: 'join',
+        status: 'pending',
+        timestamp: new Date().toLocaleString()
+      };
+
+      setCircleRequests([...circleRequests, request]);
+      addNotification(`Join request submitted for ${circle.name}. An admin will review it.`);
+      triggerNotice(`Join request for ${circle.name} sent!`, 'success');
+      return;
+    }
+
     setCircles(circles.map(c => 
       c.id === circleId ? { ...c, isJoined: !c.isJoined, memberCount: c.isJoined ? c.memberCount - 1 : c.memberCount + 1 } : c
     ));
-    const circle = circles.find(c => c.id === circleId);
-    if (circle && !circle.isJoined) {
+    if (!circle.isJoined) {
       addPoints(50);
     }
   };
@@ -105,6 +144,7 @@ export function CirclesView({
       circleName: newCircleName,
       description: newCircleDesc,
       category: newCircleCategory,
+      type: 'create',
       status: 'pending',
       timestamp: new Date().toLocaleString()
     };
@@ -289,7 +329,23 @@ export function CirclesView({
       )}
 
       {/* SEARCH & FILTERS */}
-      <div className="mb-10 flex flex-col md:flex-row gap-4 items-center justify-between">
+      <div className="mb-8">
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          {categoryOptions.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                selectedCategory === category.id
+                  ? 'bg-secondary text-white shadow-lg shadow-secondary/20'
+                  : 'bg-white border border-slate-100 text-slate-500 hover:bg-slate-50'
+              }`}
+            >
+              {category.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
           {(['all', 'joined', 'custom'] as const).map((filter) => (
             <button
@@ -305,7 +361,6 @@ export function CirclesView({
             </button>
           ))}
         </div>
-
         <div className="flex items-center gap-4 w-full md:w-auto">
           <div className="relative flex-grow md:w-80">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -382,26 +437,33 @@ export function CirclesView({
                     {circle.description}
                   </p>
                   
-                  <div className="pt-4 flex items-center justify-between border-t border-slate-50">
+                  <div className="pt-4 flex flex-col gap-4 border-t border-slate-50 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="inline-flex items-center gap-3 px-3 py-2 rounded-full bg-slate-100 text-[10px] uppercase tracking-widest text-slate-500">
+                      <span className="h-2 w-2 rounded-full bg-secondary" />
+                      {circle.category === 'custom' ? 'Custom Hub' : `${circle.category.charAt(0).toUpperCase() + circle.category.slice(1)} Circle`}
+                    </div>
                     <button 
                       onClick={(e) => handleJoinCircle(e, circle.id)}
                       className={`px-5 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
                         circle.isJoined
                           ? 'bg-slate-100 text-slate-500 hover:bg-rose-50 hover:text-rose-600'
-                          : 'bg-secondary text-white shadow-lg shadow-secondary/20 hover:scale-105'
+                          : circle.permissions?.isPrivate && circleRequests.some(r => r.type === 'join' && r.circleId === circle.id && r.userId === currentUser.id && r.status === 'pending')
+                            ? 'bg-amber-100 text-amber-700 cursor-not-allowed'
+                            : 'bg-secondary text-white shadow-lg shadow-secondary/20 hover:scale-105'
                       }`}
+                      disabled={circle.permissions?.isPrivate && circleRequests.some(r => r.type === 'join' && r.circleId === circle.id && r.userId === currentUser.id && r.status === 'pending')}
                     >
-                      {circle.isJoined ? 'Joined' : 'Join Circle'}
+                      {circle.isJoined ? 'Joined' : circle.permissions?.isPrivate && circleRequests.some(r => r.type === 'join' && r.circleId === circle.id && r.userId === currentUser.id && r.status === 'pending') ? 'Request Pending' : 'Join Circle'}
                     </button>
-                    <div className="flex -space-x-2">
-                      {[1,2,3].map(i => (
-                        <div key={i} className="h-6 w-6 rounded-full border-2 border-white overflow-hidden bg-slate-100">
-                          <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="" />
-                        </div>
-                      ))}
-                      <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-400">
-                        +
+                  </div>
+                  <div className="flex -space-x-2">
+                    {[1,2,3].map(i => (
+                      <div key={i} className="h-6 w-6 rounded-full border-2 border-white overflow-hidden bg-slate-100">
+                        <img src={`https://i.pravatar.cc/100?img=${i + 10}`} alt="" />
                       </div>
+                    ))}
+                    <div className="h-6 w-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-black text-slate-400">
+                      +
                     </div>
                   </div>
                 </div>
@@ -532,6 +594,25 @@ export function CirclesView({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Circle Category</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {categoryOptions.filter(c => c.id !== 'all').map((option) => (
+                          <button
+                            key={option.id}
+                            type="button"
+                            onClick={() => setNewCircleCategory(option.id)}
+                            className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all text-left border ${
+                              newCircleCategory === option.id
+                                ? 'bg-secondary text-white border-secondary'
+                                : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                     <div className="p-4 rounded-2xl border-2 border-secondary bg-secondary/5 space-y-1 relative cursor-pointer">
                       <div className="flex items-center justify-between">
                          <Globe className="h-5 w-5 text-secondary" />

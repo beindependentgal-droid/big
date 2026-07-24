@@ -8,6 +8,8 @@ interface FooterProps {
 
 export function Footer({ setCurrentView, isAuthenticated = false }: FooterProps) {
   const currentYear = new Date().getFullYear();
+  const buildTimestamp = (import.meta as any).env?.VITE_BUILD_TIMESTAMP || '';
+  const buildDate = buildTimestamp ? new Date(buildTimestamp).toLocaleString() : '';
 
   return (
     <footer className="bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 pt-16 pb-12 transition-colors duration-300">
@@ -172,9 +174,14 @@ export function Footer({ setCurrentView, isAuthenticated = false }: FooterProps)
             © {currentYear} Be Independent Gal (BIG). All rights reserved.
           </p>
           
-          <div className="flex items-center gap-1 font-bold text-slate-400 dark:text-slate-500">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 font-bold text-slate-400 dark:text-slate-500">
             <span>Built to support your next step.</span>
             <Heart className="h-3 w-3 text-secondary fill-secondary animate-pulse ml-1" />
+            {buildDate ? (
+              <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                Built: {buildDate}
+              </span>
+            ) : null}
           </div>
         </div>
 

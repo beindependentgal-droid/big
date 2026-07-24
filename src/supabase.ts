@@ -15,16 +15,16 @@ import {
 } from './data';
 
 const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabasePublicKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('http'));
+  return !!(supabaseUrl && supabasePublicKey && supabaseUrl.startsWith('http'));
 };
 
-// Create the client with the public Supabase anon key only.
-// Do not send the local app session token here unless it is a real Supabase JWT.
+// Create the client with the public Supabase key (publishable or anon) only.
+// This should use the browser-safe key and avoid sending local app session tokens here.
 export const supabase = isSupabaseConfigured()
-  ? createClient(supabaseUrl, supabaseAnonKey)
+  ? createClient(supabaseUrl, supabasePublicKey)
   : null;
 
 let globalTablesMissing = false;
