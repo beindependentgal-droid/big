@@ -173,11 +173,11 @@ export function Header({
             onClick={() => setCurrentView(isAuthenticated ? 'feeds' : 'home')}
             className="flex items-center gap-2.5 cursor-pointer select-none group"
           >
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-secondary to-pink-500 flex items-center justify-center text-white shadow-md shadow-secondary/20 transition-transform group-hover:scale-105">
-              <span className="font-black text-xs tracking-tighter">BIG</span>
+            <div className="h-9 w-9 rounded-full overflow-hidden flex items-center justify-center shadow-md transition-transform group-hover:scale-105">
+              <img src="/images/logo.png" alt="BIG logo" className="h-full w-full object-cover" />
             </div>
             <span className="hidden sm:block font-black text-lg text-primary dark:text-white tracking-tighter transition-colors group-hover:text-secondary">
-              THE <span className="text-secondary group-hover:text-primary dark:group-hover:text-white">SISTERHOOD</span>
+              BIG
             </span>
           </div>
         </div>
