@@ -40,7 +40,7 @@ export function Footer({ setCurrentView, isAuthenticated = false }: FooterProps)
           <div className="col-span-1 sm:col-span-2 md:col-span-5 space-y-4">
             <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentView(isAuthenticated ? 'feeds' : 'home')}>
               <div className="flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3">
-                <img src="/logo.png" alt="Organization Logo" className="h-10 w-10 object-contain" />
+                <img src="/images/logo.png" alt="Organization Logo" className="h-10 w-10 object-contain" />
               </div>
               <span className="text-base font-heading font-black text-primary dark:text-primary-foreground uppercase tracking-tight">
                 BIG Academy
