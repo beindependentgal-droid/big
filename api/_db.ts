@@ -1,4 +1,5 @@
 import fs from "fs";
+import os from "os";
 import path from "path";
 import crypto from "crypto";
 import { 
@@ -26,12 +27,9 @@ import {
 } from "../src/data";
 
 const LOCAL_DB_FILE = path.join(process.cwd(), "api", "_db.json");
-const TMP_DB_FILE = "/tmp/_db.json";
+const TMP_DB_FILE = path.join(os.tmpdir(), "_db.json");
 
 function getActiveDbFilePath(): string {
-  if (fs.existsSync(TMP_DB_FILE)) {
-    return TMP_DB_FILE;
-  }
   if (fs.existsSync(LOCAL_DB_FILE)) {
     return LOCAL_DB_FILE;
   }

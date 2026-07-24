@@ -17,8 +17,10 @@ import {
 const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabasePublicKey = (import.meta as any).env.VITE_SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || (import.meta as any).env.VITE_SUPABASE_ANON_KEY || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
+let globalSupabaseBroken = false;
+
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabasePublicKey && supabaseUrl.startsWith('http'));
+  return !!(supabaseUrl && supabasePublicKey && supabaseUrl.startsWith('http') && !globalSupabaseBroken);
 };
 
 // Create the client with the public Supabase key (publishable or anon) only.
@@ -44,12 +46,23 @@ function handleSupabaseError(context: string, error: any) {
     errCode === 'PGRST116' ||
     errCode === '42P01';
 
+  const isInvalidCredentials =
+    errMsg.toLowerCase().includes('invalid api key') ||
+    errMsg.toLowerCase().includes('invalid key') ||
+    errMsg.toLowerCase().includes('unauthorized') ||
+    errMsg.toLowerCase().includes('401') ||
+    errCode === '401' ||
+    errCode === 'invalid_api_key';
+
   if (isMissingTable) {
     globalTablesMissing = true;
     console.warn(`[Supabase Status] Tables have not been initialized yet in your Supabase project. Setup is required via SQL. (${context})`);
+  } else if (isInvalidCredentials) {
+    globalSupabaseBroken = true;
+    console.warn(`[Supabase Status] Invalid Supabase credentials or unauthorized access detected. Falling back to local storage. (${context})`);
   } else {
     // Normal error, log gently
-    console.warn(`[Supabase Warning] ${context}:`, errMsg);
+    console.warn(`[Supabase Warning] ${context}:`, errMsg || errDetails || errCode);
   }
 }
 
