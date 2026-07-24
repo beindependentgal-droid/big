@@ -122,6 +122,12 @@ app.use((req, res, next) => {
 
 // Limit body parsing to a safe threshold (e.g. 5mb) to avoid disk exhaustion / payload-size inflation
 app.use(express.json({ limit: '5mb' }));
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err instanceof SyntaxError && 'body' in err) {
+    return res.status(400).json({ error: 'Invalid JSON payload' });
+  }
+  next(err);
+});
 
 // Robust Token Bucket Rate Limiter to prevent brute-force and resource abuse
 class TokenBucket {

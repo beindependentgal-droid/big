@@ -1,5 +1,24 @@
 import { Member, Post, Event, Challenge, Conversation, MentorshipPair, Circle, CircleRequest, Campaign, Donation, MonthlySupporter, ImpactStory } from './data';
 
+export async function parseApiResponseBody<T>(res: Response): Promise<T> {
+  const contentType = res.headers.get('content-type') || '';
+  const text = await res.text();
+
+  if (!text) {
+    throw new Error('Server returned an empty response');
+  }
+
+  if (contentType.includes('application/json') || text.trim().startsWith('{') || text.trim().startsWith('[')) {
+    try {
+      return JSON.parse(text) as T;
+    } catch (error) {
+      throw new Error('Server returned invalid JSON');
+    }
+  }
+
+  throw new Error('Server returned an unexpected response');
+}
+
 export interface ForumThread {
   id: string;
   circleId: 'learn' | 'connect' | 'earn' | 'thrive';
@@ -58,8 +77,11 @@ export const apiService = {
   // Load entire unified backend database state
   async getFullState(): Promise<FullBackendState> {
     const res = await fetch('/api/db');
-    if (!res.ok) throw new Error('Failed to load database from server');
-    return res.json();
+    if (!res.ok) {
+      const errorBody = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
+      throw new Error(errorBody.error || 'Failed to load database from server');
+    }
+    return parseApiResponseBody<FullBackendState>(res);
   },
 
   // Save/Sync state sections securely
@@ -74,9 +96,12 @@ export const apiService = {
       headers: getHeaders(),
       body: JSON.stringify(partialState)
     });
-    if (!res.ok) throw new Error('Failed to sync state to server');
-    const data = await res.json();
-    return data.state;
+    if (!res.ok) {
+      const errorBody = await parseApiResponseBody<{ error?: string; state?: FullBackendState }>(res).catch(() => ({}));
+      throw new Error(errorBody.error || 'Failed to sync state to server');
+    }
+    const data = await parseApiResponseBody<{ state?: FullBackendState }>(res);
+    return data.state || partialState as FullBackendState;
   },
 
   // Granular updates (with token protection)
@@ -189,10 +214,10 @@ export const apiService = {
       body: JSON.stringify({ name, email, password, biometricCredentialId })
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
       throw new Error(err.error || 'Registration failed');
     }
-    return res.json();
+    return parseApiResponseBody<{ token: string; user: Member }>(res);
   },
 
   // Enroll biometrics for an already-authenticated session
@@ -203,10 +228,10 @@ export const apiService = {
       body: JSON.stringify({ biometricCredentialId })
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
       throw new Error(err.error || 'Biometric enrollment failed');
     }
-    return res.json();
+    return parseApiResponseBody<{ success: boolean; user: Member }>(res);
   },
 
   // Login via biometric handshake
@@ -217,10 +242,10 @@ export const apiService = {
       body: JSON.stringify({ email, biometricCredentialId })
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
       throw new Error(err.error || 'Biometric login failed');
     }
-    return res.json();
+    return parseApiResponseBody<{ token: string; user: Member }>(res);
   },
 
   // Login securely
@@ -231,10 +256,10 @@ export const apiService = {
       body: JSON.stringify({ email, password })
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
       throw new Error(err.error || 'Login failed');
     }
-    return res.json();
+    return parseApiResponseBody<{ token: string; user: Member }>(res);
   },
 
   // Verify stored session token
@@ -243,7 +268,7 @@ export const apiService = {
       headers: getHeaders()
     });
     if (!res.ok) throw new Error('Session is invalid or expired');
-    return res.json();
+    return parseApiResponseBody<{ valid: boolean; user: Member }>(res);
   },
 
   // Request true server-side OTP
@@ -254,10 +279,10 @@ export const apiService = {
       body: JSON.stringify({ email, actionName })
     });
     if (!res.ok) {
-      const err = await res.json();
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(() => ({}));
       throw new Error(err.error || 'Failed to dispatch code');
     }
-    return res.json();
+    return parseApiResponseBody<{ success: boolean; message: string }>(res);
   },
 
   // Verify true server-side OTP
