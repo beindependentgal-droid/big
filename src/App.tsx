@@ -1589,6 +1589,7 @@ export default function App() {
         <ScrollToTop />
         </ErrorBoundary>
       </main>
+    </div>
 
       {/* SUPPORT & CHAT WIDGET */}
       {!isAuthenticated && <ChatWidget />}
@@ -1754,7 +1755,6 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
-        </ErrorBoundary>
 
         {/* GET STARTED TOUR */}
       <AnimatePresence>
