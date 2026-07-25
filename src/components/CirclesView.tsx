@@ -18,7 +18,7 @@ import { CirclesMarketingView } from './CirclesMarketingView';
 
 interface CirclesViewProps {
   circles: Circle[];
-  setCircles: (circles: Circle[]) => void;
+  setCircles: React.Dispatch<React.SetStateAction<Circle[]>>;
   circleRequests: CircleRequest[];
   setCircleRequests: React.Dispatch<React.SetStateAction<CircleRequest[]>>;
   currentUser: Member;
@@ -114,14 +114,14 @@ export function CirclesView({
         timestamp: new Date().toLocaleString()
       };
 
-      setCircleRequests([...circleRequests, request]);
+      setCircleRequests(prev => [...prev, request]);
       addNotification(`Join request submitted for ${circle.name}. An admin will review it.`);
       triggerNotice(`Join request for ${circle.name} sent!`, 'success');
       return;
     }
 
-    setCircles(circles.map(c => 
-      c.id === circleId ? { ...c, isJoined: !c.isJoined, memberCount: c.isJoined ? c.memberCount - 1 : c.memberCount + 1 } : c
+    setCircles(prev => prev.map(c => 
+      c.id === circleId ? { ...c, isJoined: !c.isJoined, memberCount: c.isJoined ? Math.max(0, c.memberCount - 1) : c.memberCount + 1 } : c
     ));
     if (!circle.isJoined) {
       addPoints(50);
@@ -149,7 +149,7 @@ export function CirclesView({
       timestamp: new Date().toLocaleString()
     };
 
-    setCircleRequests([...circleRequests, request]);
+    setCircleRequests(prev => [...prev, request]);
     setShowCreateModal(false);
     setNewCircleName('');
     setNewCircleDesc('');

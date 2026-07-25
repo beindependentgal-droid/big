@@ -46,10 +46,9 @@ interface SettingsViewProps {
   currentUser: Member;
   onSaveProfile: (user: Member) => void;
   addPoints: (pts: number) => void;
-  triggerSimulatedEmail?: (subject: string, body: string) => void;
 }
 
-export function SettingsView({ currentUser, onSaveProfile, addPoints, triggerSimulatedEmail }: SettingsViewProps) {
+export function SettingsView({ currentUser, onSaveProfile, addPoints }: SettingsViewProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'privacy' | 'notifications' | 'verification' | 'display' | 'account'>('profile');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -1604,7 +1603,6 @@ export function SettingsView({ currentUser, onSaveProfile, addPoints, triggerSim
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={handleVerifySuccess}
         actionName={authActionName}
-        triggerSimulatedEmail={triggerSimulatedEmail}
       />
 
       {/* SUCCESS TRANSITION BANNER */}

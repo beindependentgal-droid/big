@@ -127,6 +127,17 @@ on public.big_circles
 for select
 using (true);
 
+create policy "circles_write_public"
+on public.big_circles
+for insert
+with check (true);
+
+create policy "circles_update_public"
+on public.big_circles
+for update
+using (true)
+with check (true);
+
 create policy "conversations_read_public"
 on public.big_conversations
 for select

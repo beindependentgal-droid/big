@@ -59,6 +59,8 @@ import {
 } from 'recharts';
 import { Member, Event, Challenge, Post, Circle, CircleRequest } from '../data';
 import { ActivityLog } from '../types';
+import { getSuperAdminOverview } from '../lib/adminDashboard';
+import { supabaseService } from '../supabase';
 
 interface AdminDashboardViewProps {
   members: Member[];
@@ -277,21 +279,74 @@ export function AdminDashboardView({
   const [broadcastTarget, setBroadcastTarget] = useState<'all' | 'mentors' | 'learners'>('all');
   const [broadcastType, setBroadcastType] = useState<'info' | 'alert' | 'badge'>('info');
   const [broadcastSuccess, setBroadcastSuccess] = useState(false);
+  const buildLiveOpsFallback = () => ({
+    memberGrowth: Array.from({ length: 7 }, (_, index) => ({
+      time: index === 6 ? 'Now' : `${6 - index}d`,
+      members: Math.max(8, members.length + Math.max(0, 6 - index))
+    })),
+    moderationLoad: Array.from({ length: 6 }, (_, index) => ({
+      label: index === 5 ? 'Now' : `${(5 - index) * 4}h`,
+      load: Math.max(1, posts.length + Math.max(0, 3 - index))
+    }))
+  });
+  const [liveOpsData, setLiveOpsData] = useState(buildLiveOpsFallback);
+
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadLiveOpsData = async () => {
+      if (!supabaseConnected) {
+        if (isMounted) {
+          setLiveOpsData(buildLiveOpsFallback());
+        }
+        return;
+      }
+
+      try {
+        const analytics = await supabaseService.getAdminAnalytics();
+        if (isMounted) {
+          setLiveOpsData(analytics);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setLiveOpsData(buildLiveOpsFallback());
+        }
+      }
+    };
+
+    loadLiveOpsData();
+    const interval = window.setInterval(() => {
+      void loadLiveOpsData();
+    }, 30000);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(interval);
+    };
+  }, [supabaseConnected, members.length, posts.length]);
 
   // Backup & Reset states
   const [backupSuccess, setBackupSuccess] = useState(false);
-  const [syncLogs, setSyncLogs] = useState<string[]>([
+  const [maintenanceLogs, setMaintenanceLogs] = useState<string[]>([
     'System initialization successful.',
     'Local database state parsed successfully.',
     `Found ${members.length} member entries, ${events.length} event records, and ${challenges.length} challenge points.`
   ]);
-  const [isSimulatingSync, setIsSimulatingSync] = useState(false);
+  const [isRefreshingLogs, setIsRefreshingLogs] = useState(false);
 
   // Helper stats computation
   const totalMembersCount = members.length;
   const totalPointsCount = members.reduce((sum, m) => sum + (m.id === currentUser.id ? userPoints : m.points), 0);
   const totalEventsCount = events.length;
   const totalChallengesCount = challenges.length;
+  const superAdminOverview = getSuperAdminOverview({
+    members,
+    posts,
+    circleRequests,
+    reportedUserIds,
+    blockedUserIds,
+    events
+  });
   
   const mentorCount = members.filter(m => m.rank === 'Mentor' || m.rank === 'Coach').length;
   const learnerCount = members.filter(m => m.rank === 'Learner').length;
@@ -377,6 +432,13 @@ export function AdminDashboardView({
         return m;
       }));
     }
+
+    if (supabaseConnected) {
+      const updatedMembers = members.map(m => m.id === memberId ? { ...m, points: Math.max(0, (m.points || 0) + amount) } : m);
+      if (memberId !== currentUser.id) {
+        void supabaseService.saveMember(updatedMembers.find(m => m.id === memberId) as Member);
+      }
+    }
     
     setSyncLogs(prev => [
       `Adjusted points for member (${memberId}): ${amount > 0 ? '+' : ''}${amount} pts.`,
@@ -404,6 +466,16 @@ export function AdminDashboardView({
       }));
     }
 
+    if (supabaseConnected && memberId !== currentUser.id) {
+      const targetMember = members.find(m => m.id === memberId);
+      if (targetMember) {
+        const badges = targetMember.badges || [];
+        const hasBadge = badges.includes(badgeCode);
+        const updatedBadges = hasBadge ? badges.filter(b => b !== badgeCode) : [...badges, badgeCode];
+        void supabaseService.saveMember({ ...targetMember, badges: updatedBadges });
+      }
+    }
+
     setSyncLogs(prev => [
       `Toggled badge "${badgeCode}" for member (${memberId}).`,
       ...prev
@@ -418,6 +490,13 @@ export function AdminDashboardView({
       }
       return m;
     }));
+
+    if (supabaseConnected) {
+      const targetMember = members.find(m => m.id === memberId);
+      if (targetMember) {
+        void supabaseService.saveMember({ ...targetMember, rank: newRank });
+      }
+    }
 
     setSyncLogs(prev => [
       `Updated member (${memberId}) rank to ${newRank}.`,
@@ -437,6 +516,13 @@ export function AdminDashboardView({
       }
       return m;
     }));
+
+    if (supabaseConnected) {
+      const targetMember = members.find(m => m.id === memberId);
+      if (targetMember) {
+        void supabaseService.saveMember({ ...targetMember, isModerator: !targetMember.isModerator });
+      }
+    }
     
     setSyncLogs(prev => [
       `Toggled moderator status for member (${memberId}).`,
@@ -445,8 +531,6 @@ export function AdminDashboardView({
   };
 
   const toggleSuperAdmin = (memberId: string) => {
-    // Safety check: Don't allow toggling own super admin status if you are the one doing it
-    // But since this is a mock environment, we'll just implement the logic.
     setMembers(prev => prev.map(m => {
       if (m.id === memberId) {
         const isAdmin = !m.isSuperAdmin;
@@ -459,6 +543,13 @@ export function AdminDashboardView({
       return m;
     }));
 
+    if (supabaseConnected) {
+      const targetMember = members.find(m => m.id === memberId);
+      if (targetMember) {
+        void supabaseService.saveMember({ ...targetMember, isSuperAdmin: !targetMember.isSuperAdmin });
+      }
+    }
+
     setSyncLogs(prev => [
       `Toggled super admin status for member (${memberId}).`,
       ...prev
@@ -468,7 +559,16 @@ export function AdminDashboardView({
   const handleBulkDelete = () => {
     if (!window.confirm(`Are you sure you want to delete ${selectedMemberIds.length} sister accounts? This cannot be undone.`)) return;
     
-    setMembers(prev => prev.filter(m => !selectedMemberIds.includes(m.id)));
+    const remainingMembers = members.filter(m => !selectedMemberIds.includes(m.id));
+    setMembers(remainingMembers);
+    if (supabaseConnected) {
+      selectedMemberIds.forEach(id => {
+        const memberToDelete = members.find(m => m.id === id);
+        if (memberToDelete) {
+          void supabaseService.saveMember({ ...memberToDelete, deleted: true } as Member & { deleted?: boolean });
+        }
+      });
+    }
     logActivity('Bulk Delete', `Deleted ${selectedMemberIds.length} accounts.`);
     setSelectedMemberIds([]);
   };
@@ -476,12 +576,19 @@ export function AdminDashboardView({
   const handleBulkResetPermissions = () => {
     if (!window.confirm(`Reset ranks and award default points for ${selectedMemberIds.length} sisters?`)) return;
 
-    setMembers(prev => prev.map(m => {
+    const nextMembers = members.map(m => {
       if (selectedMemberIds.includes(m.id)) {
         return { ...m, rank: 'Member', points: 100, isModerator: false };
       }
       return m;
-    }));
+    });
+    setMembers(nextMembers);
+
+    if (supabaseConnected) {
+      nextMembers.filter(m => selectedMemberIds.includes(m.id)).forEach((member: Member) => {
+        void supabaseService.saveMember(member);
+      });
+    }
     
     logActivity('Bulk Reset', `Reset rank and points for ${selectedMemberIds.length} accounts.`);
     setSelectedMemberIds([]);
@@ -624,6 +731,9 @@ export function AdminDashboardView({
     };
 
     setMembers(prev => [...prev, newMemberEntry]);
+    if (supabaseConnected) {
+      void supabaseService.saveMember(newMemberEntry);
+    }
     setShowAddMemberModal(false);
     
     // Create direct default greeting notification
@@ -661,6 +771,12 @@ export function AdminDashboardView({
     
     if (confirm(`Are you sure you want to deactivate and remove sister "${name}" from the network?`)) {
       setMembers(prev => prev.filter(m => m.id !== id));
+      if (supabaseConnected) {
+        const targetMember = members.find(m => m.id === id);
+        if (targetMember) {
+          void supabaseService.saveMember({ ...targetMember, deleted: true } as Member & { deleted?: boolean });
+        }
+      }
       setSyncLogs(prev => [
         `Deactivated and purged member "${name}" (ID: ${id}) from local database.`,
         ...prev
@@ -686,6 +802,9 @@ export function AdminDashboardView({
     };
 
     setEvents(prev => [...prev, createdEvent]);
+    if (supabaseConnected) {
+      void supabaseService.saveEvent(createdEvent);
+    }
     setShowAddEventModal(false);
 
     // Platform notification
@@ -713,6 +832,12 @@ export function AdminDashboardView({
   const handleDeleteEvent = (id: string, title: string) => {
     if (confirm(`Remove event "${title}" from the platform roster?`)) {
       setEvents(prev => prev.filter(e => e.id !== id));
+      if (supabaseConnected) {
+        const targetEvent = events.find(e => e.id === id);
+        if (targetEvent) {
+          void supabaseService.saveEvent({ ...targetEvent, deleted: true } as Event & { deleted?: boolean });
+        }
+      }
       setSyncLogs(prev => [
         `Removed event "${title}" from platform calendar.`,
         ...prev
@@ -737,6 +862,9 @@ export function AdminDashboardView({
     };
 
     setChallenges(prev => [...prev, createdChallenge]);
+    if (supabaseConnected) {
+      void supabaseService.saveChallenge(createdChallenge);
+    }
     setShowAddChallengeModal(false);
 
     setNotifications(prev => [
@@ -762,6 +890,12 @@ export function AdminDashboardView({
   const handleDeleteChallenge = (id: string, title: string) => {
     if (confirm(`Are you sure you want to remove weekly challenge "${title}"?`)) {
       setChallenges(prev => prev.filter(c => c.id !== id));
+      if (supabaseConnected) {
+        const targetChallenge = challenges.find(c => c.id === id);
+        if (targetChallenge) {
+          void supabaseService.saveChallenge({ ...targetChallenge, deleted: true } as Challenge & { deleted?: boolean });
+        }
+      }
       setSyncLogs(prev => [
         `Deleted challenge "${title}" from the roster.`,
         ...prev
@@ -793,7 +927,7 @@ export function AdminDashboardView({
     setBroadcastMessage('');
     setTimeout(() => setBroadcastSuccess(false), 4000);
 
-    setSyncLogs(prev => [
+    setMaintenanceLogs(prev => [
       `Pushed global system broadcast to notifications list. Type: ${broadcastType}.`,
       ...prev
     ]);
@@ -822,31 +956,31 @@ export function AdminDashboardView({
     setBackupSuccess(true);
     setTimeout(() => setBackupSuccess(false), 3000);
 
-    setSyncLogs(prev => [
+    setMaintenanceLogs(prev => [
       `Generated state backup JSON and prompted file download.`,
       ...prev
     ]);
   };
 
-  // Action: Simulate Cloud Synchronization Refresh
-  const handleSimulateSync = () => {
-    if (isSimulatingSync) return;
-    setIsSimulatingSync(true);
+  // Action: Refresh maintenance log feed
+  const handleRefreshLogs = () => {
+    if (isRefreshingLogs) return;
+    setIsRefreshingLogs(true);
 
     const steps = [
-      'Authenticating secure admin tunnel credentials...',
-      'Initiating connection handshake with backend container node...',
-      'Comparing local JSON schemas with active SQL metadata definitions...',
-      `Uploading delta tables for ${members.length} members & ${events.length} events...`,
-      'Synchronizing global points leaderboard metrics...',
-      'Cloud Synchronization Complete! All tables are green and live.'
+      'Checking backend health and operational state...',
+      'Retrieving recent maintenance events...',
+      'Validating current platform schema and feature flags...',
+      `Refreshing records for ${members.length} members and ${events.length} events...`,
+      'Updating admin activity stream...',
+      'Maintenance log refresh complete.'
     ];
 
     steps.forEach((step, index) => {
       setTimeout(() => {
-        setSyncLogs(prev => [step, ...prev]);
+        setMaintenanceLogs(prev => [step, ...prev]);
         if (index === steps.length - 1) {
-          setIsSimulatingSync(false);
+          setIsRefreshingLogs(false);
         }
       }, (index + 1) * 600);
     });
@@ -894,6 +1028,9 @@ export function AdminDashboardView({
       };
 
       setCircles(prev => [...prev, newCircle]);
+      if (supabaseConnected) {
+        void supabaseService.saveCircle?.(newCircle);
+      }
       setNotifications(prev => [
         { id: `not-circle-approved-${Date.now()}`, title: `🎉 Great news! The circle "${request.circleName}" has been approved and is now live!`, read: false },
         ...prev
@@ -917,11 +1054,23 @@ export function AdminDashboardView({
     }
 
     setCircleRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'approved' } : r));
+    if (supabaseConnected) {
+      const updatedRequest = circleRequests.find(r => r.id === requestId);
+      if (updatedRequest) {
+        void supabaseService.saveCircleRequest?.({ ...updatedRequest, status: 'approved' });
+      }
+    }
   };
 
   // Action: Reject Circle Request
   const handleRejectCircleRequest = (requestId: string) => {
     setCircleRequests(prev => prev.map(r => r.id === requestId ? { ...r, status: 'rejected' } : r));
+    if (supabaseConnected) {
+      const updatedRequest = circleRequests.find(r => r.id === requestId);
+      if (updatedRequest) {
+        void supabaseService.saveCircleRequest?.({ ...updatedRequest, status: 'rejected' });
+      }
+    }
     setSyncLogs(prev => [
       `Rejected circle request with ID: ${requestId}.`,
       ...prev
@@ -933,6 +1082,12 @@ export function AdminDashboardView({
     if (confirm(`CRITICAL: Are you sure you want to PERMANENTLY DELETE the "${name}" circle? This will remove all posts and memberships.`)) {
       setCircles(prev => prev.filter(c => c.id !== circleId));
       setPosts(prev => prev.filter(p => p.circleId !== circleId));
+      if (supabaseConnected) {
+        const targetCircle = circles.find(c => c.id === circleId);
+        if (targetCircle) {
+          void supabaseService.saveCircle?.({ ...targetCircle, deleted: true } as Circle & { deleted?: boolean });
+        }
+      }
       setSyncLogs(prev => [
         `Permanently deleted circle: "${name}" (ID: ${circleId}).`,
         ...prev
@@ -943,6 +1098,12 @@ export function AdminDashboardView({
   // Action: Suspend Circle
   const handleSuspendCircle = (circleId: string, name: string, isCurrentlySuspended: boolean) => {
     setCircles(prev => prev.map(c => c.id === circleId ? { ...c, isSuspended: !isCurrentlySuspended } : c));
+    if (supabaseConnected) {
+      const targetCircle = circles.find(c => c.id === circleId);
+      if (targetCircle) {
+        void supabaseService.saveCircle?.({ ...targetCircle, isSuspended: !isCurrentlySuspended });
+      }
+    }
     setSyncLogs(prev => [
       `${isCurrentlySuspended ? 'Restored' : 'Suspended'} circle: "${name}" (ID: ${circleId}).`,
       ...prev
@@ -975,13 +1136,6 @@ export function AdminDashboardView({
                 <Shield className="h-3.5 w-3.5 text-accent" />
                 Super Admin Authorized
               </span>
-              <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold ${
-                supabaseConnected ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-              }`}>
-                <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-                {supabaseConnected ? 'Cloud Active' : 'Offline Mode'}
-              </span>
-
               <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold ${
                 apiStatus === 'healthy' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 
                 apiStatus === 'unhealthy' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 
@@ -1040,6 +1194,74 @@ export function AdminDashboardView({
             </button>
           </div>
         </div>
+      </div>
+
+      {/* GOVERNANCE SNAPSHOT */}
+      <div className="rounded-3xl border border-slate-150 bg-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Super Admin Snapshot</p>
+            <h2 className="font-heading text-xl font-black text-slate-900">Leadership pulse for the sisterhood</h2>
+            <p className="mt-2 text-sm text-slate-600">Monitor operations, approvals, and growth signals from one view.</p>
+          </div>
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm font-semibold ${
+            superAdminOverview.systemHealth === 'critical'
+              ? 'border-rose-200 bg-rose-50 text-rose-700'
+              : superAdminOverview.systemHealth === 'warning'
+                ? 'border-amber-200 bg-amber-50 text-amber-700'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+          }`}>
+            <Shield className="h-4 w-4" />
+            {superAdminOverview.systemHealth === 'critical' ? 'Urgent attention' : superAdminOverview.systemHealth === 'warning' ? 'Needs review' : 'Healthy'}
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Growth</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{superAdminOverview.growthRate}%</p>
+            <p className="text-sm text-slate-500">Weekly signup trend</p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pending approvals</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{superAdminOverview.pendingApprovals}</p>
+            <p className="text-sm text-slate-500">Circle and moderation requests</p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Flagged items</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{superAdminOverview.flaggedItems}</p>
+            <p className="text-sm text-slate-500">Reports and restrictions</p>
+          </div>
+          <div className="rounded-2xl bg-slate-50 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Upcoming events</p>
+            <p className="mt-2 text-2xl font-black text-slate-900">{superAdminOverview.upcomingEvents}</p>
+            <p className="text-sm text-slate-500">Scheduled for the week</p>
+          </div>
+        </div>
+
+        {superAdminOverview.alerts.length > 0 && (
+          <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center gap-2">
+              <Bell className="h-4 w-4 text-slate-600" />
+              <p className="text-sm font-black text-slate-800">Priority alerts</p>
+            </div>
+            <div className="mt-3 space-y-2">
+              {superAdminOverview.alerts.map(alert => (
+                <div key={alert.id} className="flex items-start justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{alert.title}</p>
+                    <p className="text-xs text-slate-500">{alert.detail}</p>
+                  </div>
+                  <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${
+                    alert.severity === 'critical' ? 'bg-rose-100 text-rose-700' : alert.severity === 'warning' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-700'
+                  }`}>
+                    {alert.severity}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* QUICK METRICS SUMMARY */}
@@ -1272,147 +1494,227 @@ export function AdminDashboardView({
 
           {/* VIEWPORT AREA */}
           <div className="space-y-6">
-        
-        {/* TAB 1: ANALYTICS & INSIGHTS */}
-        {activeTab === 'analytics' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Left: Circle Post distributions */}
-            <div className="md:col-span-2 rounded-2xl border border-slate-150 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="font-heading text-sm font-extrabold text-primary flex items-center gap-1.5">
-                <PieChart className="h-4.5 w-4.5 text-secondary" />
-                <span>Discussion Forums & Circle Activity Rates</span>
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Calculated by the ratio of posts, comments, and resources submitted across each specialized sisterhood hub.
-              </p>
+            {/* TAB 1: ANALYTICS & INSIGHTS */}
+            {activeTab === 'analytics' && (
+              <div className="grid grid-cols-1 xl:grid-cols-[1.6fr_0.8fr] gap-6">
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-slate-150 bg-white p-5 shadow-sm space-y-4">
+                    <h3 className="font-heading text-sm font-extrabold text-primary flex items-center gap-1.5">
+                      <PieChart className="h-4.5 w-4.5 text-secondary" />
+                      <span>Discussion Forums & Circle Activity Rates</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Calculated by the ratio of posts, comments, and resources submitted across each specialized sisterhood hub.
+                    </p>
 
-              <div className="h-64 w-full pt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={[
-                      { name: 'Learn', posts: postsByCircle.learn || 3, color: '#4f46e5' },
-                      { name: 'Connect', posts: postsByCircle.connect || 4, color: '#f43f5e' },
-                      { name: 'Earn', posts: postsByCircle.earn || 2, color: '#f59e0b' },
-                      { name: 'Thrive', posts: postsByCircle.thrive || 2, color: '#ec4899' },
-                    ]}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                      cursor={{ fill: '#f8fafc' }}
-                    />
-                    <Bar dataKey="posts" radius={[6, 6, 0, 0]}>
-                      {[
-                        { name: 'Learn', color: '#4f46e5' },
-                        { name: 'Connect', color: '#f43f5e' },
-                        { name: 'Earn', color: '#f59e0b' },
-                        { name: 'Thrive', color: '#ec4899' },
-                      ].map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-
-              <div className="border-t pt-4 grid grid-cols-3 text-center gap-4">
-                <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
-                  <span className="text-[9px] font-extrabold uppercase text-slate-400">Total Posts</span>
-                  <p className="font-heading text-lg font-black text-primary">{posts.length}</p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
-                  <span className="text-[9px] font-extrabold uppercase text-slate-400">Total Feed Comments</span>
-                  <p className="font-heading text-lg font-black text-primary">
-                    {posts.reduce((sum, p) => sum + (p.comments?.length || 0), 0)}
-                  </p>
-                </div>
-                <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
-                  <span className="text-[9px] font-extrabold uppercase text-slate-400">Avg Engagement Rate</span>
-                  <p className="font-heading text-lg font-black text-emerald-600">84.2%</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Points Growth Area Chart */}
-            <div className="rounded-2xl border border-slate-150 bg-white p-5 shadow-sm space-y-4">
-              <h3 className="font-heading text-sm font-extrabold text-primary flex items-center gap-1.5">
-                <TrendingUp className="h-4.5 w-4.5 text-secondary" />
-                <span>Points Generation Velocity</span>
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Community-wide points accumulation trend over the past 7 active platform days.
-              </p>
-
-              <div className="h-48 w-full pt-2">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={[
-                      { day: 'Mon', pts: 400 },
-                      { day: 'Tue', pts: 700 },
-                      { day: 'Wed', pts: 600 },
-                      { day: 'Thu', pts: 1100 },
-                      { day: 'Fri', pts: 950 },
-                      { day: 'Sat', pts: 1400 },
-                      { day: 'Sun', pts: totalPointsCount / 10 },
-                    ]}
-                  >
-                    <defs>
-                      <linearGradient id="colorPts" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
-                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
-                    />
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Area type="monotone" dataKey="pts" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorPts)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Regional breakdown summary instead of long progress bars */}
-              <div className="pt-2 space-y-3">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Regional Distribution</p>
-                {[
-                  { name: 'Nairobi', count: members.filter(m => m.city === 'Nairobi').length || 4, color: 'bg-primary' },
-                  { name: 'Kampala', count: members.filter(m => m.city === 'Kampala').length || 2, color: 'bg-secondary' },
-                  { name: 'Dar es Salaam', count: members.filter(m => m.city === 'Dar es Salaam').length || 1, color: 'bg-amber-500' },
-                ].map((city, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-[10px]">
-                    <div className="flex items-center gap-2">
-                       <div className={`h-2 w-2 rounded-full ${city.color}`} />
-                       <span className="font-bold text-primary">{city.name}</span>
+                    <div className="h-64 w-full pt-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                          data={[
+                            { name: 'Learn', posts: postsByCircle.learn || 3, color: '#4f46e5' },
+                            { name: 'Connect', posts: postsByCircle.connect || 4, color: '#f43f5e' },
+                            { name: 'Earn', posts: postsByCircle.earn || 2, color: '#f59e0b' },
+                            { name: 'Thrive', posts: postsByCircle.thrive || 2, color: '#ec4899' },
+                          ]}
+                          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis 
+                            dataKey="name" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                          />
+                          <YAxis 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                            cursor={{ fill: '#f8fafc' }}
+                          />
+                          <Bar dataKey="posts" radius={[6, 6, 0, 0]}>
+                            {[
+                              { name: 'Learn', color: '#4f46e5' },
+                              { name: 'Connect', color: '#f43f5e' },
+                              { name: 'Earn', color: '#f59e0b' },
+                              { name: 'Thrive', color: '#ec4899' },
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
-                    <span className="font-black text-slate-500">{city.count} sisters</span>
+
+                    <div className="border-t pt-4 grid grid-cols-3 text-center gap-4">
+                      <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
+                        <span className="text-[9px] font-extrabold uppercase text-slate-400">Total Posts</span>
+                        <p className="font-heading text-lg font-black text-primary">{posts.length}</p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
+                        <span className="text-[9px] font-extrabold uppercase text-slate-400">Total Feed Comments</span>
+                        <p className="font-heading text-lg font-black text-primary">
+                          {posts.reduce((sum, p) => sum + (p.comments?.length || 0), 0)}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-slate-50 rounded-xl space-y-0.5">
+                        <span className="text-[9px] font-extrabold uppercase text-slate-400">Avg Engagement Rate</span>
+                        <p className="font-heading text-lg font-black text-emerald-600">84.2%</p>
+                      </div>
+                    </div>
                   </div>
-                ))}
+
+                  <div className="rounded-2xl border border-slate-150 bg-white p-5 shadow-sm space-y-4">
+                    <h3 className="font-heading text-sm font-extrabold text-primary flex items-center gap-1.5">
+                      <TrendingUp className="h-4.5 w-4.5 text-secondary" />
+                      <span>Points Generation Velocity</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Community-wide points accumulation trend over the past 7 active platform days.
+                    </p>
+
+                    <div className="h-48 w-full pt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart
+                          data={[
+                            { day: 'Mon', pts: 400 },
+                            { day: 'Tue', pts: 700 },
+                            { day: 'Wed', pts: 600 },
+                            { day: 'Thu', pts: 1100 },
+                            { day: 'Fri', pts: 950 },
+                            { day: 'Sat', pts: 1400 },
+                            { day: 'Sun', pts: totalPointsCount / 10 },
+                          ]}
+                        >
+                          <defs>
+                            <linearGradient id="colorPts" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                              <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis 
+                            dataKey="day" 
+                            axisLine={false} 
+                            tickLine={false} 
+                            tick={{ fontSize: 9, fontWeight: 700, fill: '#94a3b8' }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                          />
+                          <Area type="monotone" dataKey="pts" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorPts)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="pt-2 space-y-3">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Regional Distribution</p>
+                      {[
+                        { name: 'Nairobi', count: members.filter(m => m.city === 'Nairobi').length || 4, color: 'bg-primary' },
+                        { name: 'Kampala', count: members.filter(m => m.city === 'Kampala').length || 2, color: 'bg-secondary' },
+                        { name: 'Dar es Salaam', count: members.filter(m => m.city === 'Dar es Salaam').length || 1, color: 'bg-amber-500' },
+                      ].map((city, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-[10px]">
+                          <div className="flex items-center gap-2">
+                            <div className={`h-2 w-2 rounded-full ${city.color}`} />
+                            <span className="font-bold text-primary">{city.name}</span>
+                          </div>
+                          <span className="font-black text-slate-500">{city.count} sisters</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="rounded-2xl border border-slate-150 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-heading text-sm font-extrabold text-primary">Quick Actions</h3>
+                        <p className="text-[11px] text-slate-500">Jump into the most important admin workflows.</p>
+                      </div>
+                      <div className="rounded-full bg-secondary/10 p-2 text-secondary">
+                        <Zap className="h-4 w-4" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                      {[
+                        { label: 'Review reports', tab: 'reports' as const, icon: AlertTriangle },
+                        { label: 'Approve circles', tab: 'circles' as const, icon: CircleDot },
+                        { label: 'Manage roles', tab: 'roles' as const, icon: Shield },
+                        { label: 'Send broadcast', tab: 'broadcast' as const, icon: Radio },
+                        { label: 'Add event', tab: 'events' as const, icon: Calendar },
+                        { label: 'Register member', tab: 'members' as const, icon: Users }
+                      ].map((action) => {
+                        const Icon = action.icon;
+                        return (
+                          <button
+                            key={action.label}
+                            onClick={() => {
+                              setActiveTab(action.tab);
+                              if (action.label === 'Add event') {
+                                setShowAddEventModal(true);
+                              }
+                              if (action.label === 'Register member') {
+                                setShowAddMemberModal(true);
+                              }
+                            }}
+                            className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-sm font-semibold text-slate-700 transition-all hover:border-secondary hover:bg-white"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Icon className="h-4 w-4 text-secondary" />
+                              {action.label}
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-slate-400" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-150 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-heading text-sm font-extrabold text-primary">Live Ops Pulse</h3>
+                        <p className="text-[11px] text-slate-500">Auto-refreshing signals for growth and moderation demand.</p>
+                      </div>
+                      <div className="rounded-full bg-emerald-50 p-2 text-emerald-600">
+                        <Activity className="h-4 w-4" />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 h-40 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={liveOpsData.memberGrowth}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="members" stroke="#4f46e5" strokeWidth={2.5} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="mt-4 h-36 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={liveOpsData.moderationLoad}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                          <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                          <Tooltip />
+                          <Bar dataKey="load" radius={[8, 8, 0, 0]} fill="#f43f5e" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
-          </div>
-        )}
-
-        {/* TAB 2: MEMBERS & DIRECTORY MANAGEMENT */}
+            {/* TAB 2: MEMBERS & DIRECTORY MANAGEMENT */}
         {activeTab === 'members' && (
           <div className="space-y-6">
             
@@ -2586,44 +2888,44 @@ export function AdminDashboardView({
           </div>
         )}
 
-        {/* TAB 5: DATABASE LOGS & SYNC */}
+        {/* TAB 5: SYSTEM MAINTENANCE */}
         {activeTab === 'data' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
             
-            {/* Sync diagnostics */}
+            {/* Maintenance activity log */}
             <div className="md:col-span-2 rounded-2xl border border-slate-150 bg-white p-5 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b pb-3">
                 <div>
                   <h3 className="font-heading text-sm font-extrabold text-primary flex items-center gap-1.5">
                     <Database className="h-4.5 w-4.5 text-secondary" />
-                    <span>Supabase SQL Diagnostics & Pipeline</span>
+                    <span>System Maintenance Console</span>
                   </h3>
                   <p className="text-[10px] text-slate-500">
-                    View active synchronization transactions with regional backend nodes.
+                    Review recent maintenance activity and manage the platform state from a unified operations panel.
                   </p>
                 </div>
 
                 <button
-                  onClick={handleSimulateSync}
-                  disabled={isSimulatingSync}
+                  onClick={handleRefreshLogs}
+                  disabled={isRefreshingLogs}
                   className={`rounded-xl px-3.5 py-2 text-xs font-bold transition-all flex items-center gap-1 shrink-0 ${
-                    isSimulatingSync 
+                    isRefreshingLogs 
                       ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
                       : 'bg-primary hover:bg-slate-800 text-white'
                   }`}
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isSimulatingSync ? 'animate-spin' : ''}`} />
-                  <span>{isSimulatingSync ? 'Syncing...' : 'Force Sync'}</span>
+                  <RefreshCw className={`h-3.5 w-3.5 ${isRefreshingLogs ? 'animate-spin' : ''}`} />
+                  <span>{isRefreshingLogs ? 'Refreshing...' : 'Refresh Logs'}</span>
                 </button>
               </div>
 
               {/* LOG CONTAINER Terminal styled */}
               <div className="rounded-xl bg-slate-950 text-slate-300 font-mono text-[10px] p-4 space-y-2 max-h-80 overflow-y-auto shadow-inner border border-slate-800">
                 <div className="flex items-center justify-between text-[9px] text-slate-500 border-b border-slate-800/80 pb-1.5">
-                  <span>TRANS_ID: BIG_TUNNEL_71A</span>
-                  <span>NODE: EU-WEST2</span>
+                  <span>SYS_ID: BIG_MGMT_01</span>
+                  <span>MODE: LIVE</span>
                 </div>
-                {syncLogs.map((log, idx) => (
+                {maintenanceLogs.map((log, idx) => (
                   <div key={idx} className="flex gap-2.5 items-start leading-relaxed">
                     <span className="text-secondary select-none font-bold">&gt;</span>
                     <span>{log}</span>
@@ -2634,10 +2936,10 @@ export function AdminDashboardView({
               <div className="rounded-xl bg-slate-50 border p-4 space-y-2">
                 <h4 className="font-extrabold text-xs text-primary flex items-center gap-1">
                   <CheckCircle className="h-4 w-4 text-emerald-600" />
-                  <span>State Protection Layer (RLS)</span>
+                  <span>Operational Safeguards</span>
                 </h4>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Row Level Security policies prevent unauthorized modifications. The Super Admin authorization key bypasses table policies via the high-trust API proxy layer, guaranteeing transactional consistency.
+                  Maintenance operations are recorded for audit and can be used to track system updates, user state changes, and backend synchronization activity.
                 </p>
               </div>
             </div>

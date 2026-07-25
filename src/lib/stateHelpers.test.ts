@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { calculatePointsAndBadges, updateMembers } from './stateHelpers';
+import { calculatePointsAndBadges, updateMembers, mergeMemberPreferences, mergeAcademyProgressState, getDefaultAcademyProgressState } from './stateHelpers';
 import { Member } from '../data';
 
 describe('State Management - calculatePointsAndBadges', () => {
@@ -103,6 +103,58 @@ describe('State Management - calculatePointsAndBadges', () => {
       type: 'points',
     });
     expect(result.newNotificationTitle).toBe('You were awarded +50 points!');
+  });
+});
+
+describe('State Management - mergeMemberPreferences', () => {
+  test('should apply defaults and preserve the user preference overrides', () => {
+    const member: Member = {
+      id: 'm1',
+      name: 'Sarah',
+      avatar: 'avatar.png',
+      title: 'Founder',
+      city: 'Nairobi',
+      rank: 'Member',
+      skills: [],
+      interests: [],
+      bio: 'Bio',
+      points: 100,
+      badges: [],
+    };
+
+    const updated = mergeMemberPreferences(member, {
+      theme: 'dark',
+      sessionTimeout: '30',
+    });
+
+    expect(updated.preferences).toEqual({
+      messagePermissions: 'connections',
+      emailVerifyRequired: false,
+      codeVerifyRequired: false,
+      sessionTimeout: '30',
+      theme: 'dark',
+    });
+  });
+});
+
+describe('State Management - mergeAcademyProgressState', () => {
+  test('should preserve existing progress while merging new lesson and course updates', () => {
+    const initial = getDefaultAcademyProgressState();
+    const updated = mergeAcademyProgressState(initial, {
+      enrolledCourseIds: ['course-1'],
+      completedLessonIds: ['lesson-1'],
+      lessonNotes: { 'lesson-1': 'Take notes' },
+      earnedCertificateIds: ['course-1'],
+      activeCourseId: 'course-1',
+      activeLessonId: 'lesson-1',
+    });
+
+    expect(updated.enrolledCourseIds).toEqual(['course-1']);
+    expect(updated.completedLessonIds).toEqual(['lesson-1']);
+    expect(updated.lessonNotes).toEqual({ 'lesson-1': 'Take notes' });
+    expect(updated.earnedCertificateIds).toEqual(['course-1']);
+    expect(updated.activeCourseId).toBe('course-1');
+    expect(updated.activeLessonId).toBe('lesson-1');
   });
 });
 

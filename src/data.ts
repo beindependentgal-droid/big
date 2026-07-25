@@ -43,6 +43,14 @@ export interface Member {
   pinHash?: string;
   pinSalt?: string;
   biometricCredentialId?: string;
+  preferences?: {
+    messagePermissions?: 'everyone' | 'connections' | 'mentors';
+    emailVerifyRequired?: boolean;
+    codeVerifyRequired?: boolean;
+    sessionTimeout?: string;
+    theme?: 'light' | 'dark' | 'system';
+    [key: string]: unknown;
+  };
 }
 
 export interface Circle {
@@ -258,117 +266,10 @@ export interface Story {
   viewers: string[]; // Member IDs
 }
 
-// Initial seed data
+// Production mode - no seed data
 
-export const INITIAL_MEMBERS: Member[] = [
-  {
-    id: 'm1',
-    name: 'Fatma J.',
-    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
-    title: 'Fashion Designer',
-    city: 'Nairobi',
-    rank: 'Mentor',
-    skills: ['AI in Design', 'Sustainable Fashion'],
-    interests: ['Tech', 'Design'],
-    bio: 'Experienced designer helping others integrate tech into fashion.',
-    points: 1250,
-    badges: ['Mentor', 'Top Contributor'],
-    followingIds: [],
-    followerIds: [],
-    joinedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'm2',
-    name: 'Sienna N.',
-    avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
-    title: 'Founder, EcoStyles',
-    city: 'Cape Town',
-    rank: 'Connector',
-    skills: ['E-commerce', 'Scaling'],
-    interests: ['Sustainability', 'Business'],
-    bio: 'Building the future of eco-friendly fashion.',
-    points: 850,
-    badges: ['Founder'],
-    followingIds: [],
-    followerIds: [],
-    joinedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'm3',
-    name: 'Dr. Amina',
-    avatar: '/images/african_woman_portrait_3_1784708258772.jpg',
-    title: 'Tech Strategist',
-    city: 'Lagos',
-    rank: 'Coach',
-    skills: ['Cloud Computing', 'AI'],
-    interests: ['Strategy', 'AI'],
-    bio: 'Tech enthusiast and mentor for female founders.',
-    points: 2100,
-    badges: ['Elite', 'Coach'],
-    followingIds: [],
-    followerIds: [],
-    joinedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'm4',
-    name: 'Wanjiku K.',
-    avatar: '/images/african_woman_portrait_1_1784708232425.jpg',
-    title: 'Marketing Specialist',
-    city: 'Nairobi',
-    rank: 'Member',
-    skills: ['Digital Marketing', 'Branding'],
-    interests: ['Growth', 'Marketing'],
-    bio: 'Helping startups grow their brand presence.',
-    points: 450,
-    badges: ['Rising Star'],
-    followingIds: [],
-    followerIds: [],
-    joinedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'm5',
-    name: 'Grace M.',
-    avatar: '/images/african_woman_portrait_2_1784708246407.jpg',
-    title: 'UI/UX Designer',
-    city: 'Accra',
-    rank: 'Connector',
-    skills: ['User Research', 'Interface Design'],
-    interests: ['Design', 'UX'],
-    bio: 'Passionate about creating inclusive digital experiences.',
-    points: 920,
-    badges: ['Design Guru'],
-    followingIds: [],
-    followerIds: []
-  }
-];
-export const INITIAL_EVENTS: Event[] = [
-  {
-    id: 'e1',
-    title: 'Fashion Tech Workshop',
-    date: '2026-07-20',
-    time: '14:00',
-    location: 'Online',
-    type: 'workshop',
-    attendees: 45,
-    attendeeNames: ['Fatma J.', 'Sienna N.', 'Dr. Amina'],
-    rsvped: false,
-    description: 'Learn how to integrate AI into your fashion design workflow.',
-    category: 'tech'
-  },
-  {
-    id: 'e2',
-    title: 'Lagos Founders Meetup',
-    date: '2026-07-25',
-    time: '18:00',
-    location: 'Lagos, Nigeria',
-    type: 'meetup',
-    attendees: 120,
-    attendeeNames: ['Wanjiku K.', 'Grace M.', 'You'],
-    rsvped: true,
-    description: 'Networking event for female founders in Lagos.',
-    category: 'connect'
-  }
-];
+export const INITIAL_MEMBERS: Member[] = [];
+export const INITIAL_EVENTS: Event[] = [];
 export const INITIAL_CHALLENGES: Challenge[] = [];
 export const INITIAL_RESOURCES: Resource[] = [
   {

@@ -6,12 +6,15 @@ import {
   Challenge, 
   Conversation, 
   MentorshipPair,
+  Circle,
+  CircleRequest,
   INITIAL_MEMBERS,
   INITIAL_POSTS,
   INITIAL_EVENTS,
   INITIAL_CHALLENGES,
   INITIAL_CONVERSATIONS,
-  INITIAL_MENTORSHIP_PAIRS
+  INITIAL_MENTORSHIP_PAIRS,
+  INITIAL_CIRCLES
 } from './data';
 
 const supabaseUrl = (import.meta as any).env.VITE_SUPABASE_URL || (import.meta as any).env.NEXT_PUBLIC_SUPABASE_URL || '';
@@ -82,6 +85,91 @@ const supabaseSeedState = {
   events: { running: false, done: false }
 };
 
+type AdminAnalyticsSnapshot = {
+  memberGrowth: Array<{ time: string; members: number }>;
+  moderationLoad: Array<{ label: string; load: number }>;
+};
+
+function parseAnalyticsDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function normalizeSupabaseTimestamp(value: unknown): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return new Date().toISOString();
+
+    const parsed = new Date(trimmed);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+
+    if (trimmed.toLowerCase() === 'just now' || trimmed.toLowerCase() === 'scheduled') {
+      return new Date().toISOString();
+    }
+
+    return new Date().toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
+function buildMemberGrowthSeries(members: Array<{ joinedAt?: string | null }>): AdminAnalyticsSnapshot['memberGrowth'] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    date.setHours(0, 0, 0, 0);
+
+    const count = members.filter(member => {
+      const joinedAt = parseAnalyticsDate(member.joinedAt);
+      return joinedAt && joinedAt.toDateString() === date.toDateString();
+    }).length;
+
+    return {
+      time: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      members: count
+    };
+  });
+}
+
+function buildModerationLoadSeries(posts: Array<{ timestamp?: string | null; comments?: unknown }>): AdminAnalyticsSnapshot['moderationLoad'] {
+  return Array.from({ length: 6 }, (_, index) => {
+    const now = new Date();
+    const start = new Date(now);
+    const end = new Date(now);
+    start.setHours(now.getHours() - (5 - index) * 4);
+    end.setHours(now.getHours() - (4 - index) * 4);
+
+    const load = posts.reduce((sum, post) => {
+      const createdAt = parseAnalyticsDate(post.timestamp);
+      if (!createdAt) return sum;
+      if (createdAt >= start && createdAt < end) {
+        const commentCount = Array.isArray(post.comments) ? post.comments.length : 0;
+        return sum + 1 + commentCount;
+      }
+      return sum;
+    }, 0);
+
+    return {
+      label: index === 5 ? 'Now' : `${(5 - index) * 4}h`,
+      load: Math.max(load, 0)
+    };
+  });
+}
+
+function buildDefaultAnalyticsSnapshot(members: Array<{ joinedAt?: string | null }>, posts: Array<{ timestamp?: string | null; comments?: unknown }>): AdminAnalyticsSnapshot {
+  return {
+    memberGrowth: buildMemberGrowthSeries(members),
+    moderationLoad: buildModerationLoadSeries(posts)
+  };
+}
+
 function cleanMemberForDb(member: Member) {
   return {
     id: member.id,
@@ -139,6 +227,40 @@ function cleanEventForDb(event: Event) {
     category: event.category ?? null,
     reminded: event.reminded ?? false,
     createdBy: event.createdBy ?? null
+  };
+}
+
+function cleanCircleForDb(circle: Circle) {
+  return {
+    id: circle.id,
+    name: circle.name,
+    description: circle.description ?? null,
+    image: circle.image ?? null,
+    created_by: circle.createdBy ?? null,
+    members: Array.isArray((circle as any).members) ? (circle as any).members : [circle.createdBy].filter(Boolean),
+    metadata: {
+      category: circle.category,
+      memberCount: circle.memberCount ?? 0,
+      isJoined: circle.isJoined ?? false,
+      moderators: circle.moderators ?? [],
+      rules: circle.rules ?? [],
+      permissions: circle.permissions ?? null,
+      isSuspended: circle.isSuspended ?? false,
+      isBanned: circle.isBanned ?? false,
+      bannedMemberIds: circle.bannedMemberIds ?? [],
+      suspendedMemberIds: circle.suspendedMemberIds ?? [],
+      mutedMemberIds: circle.mutedMemberIds ?? [],
+      allowedPostTypes: circle.allowedPostTypes ?? []
+    }
+  };
+}
+
+function cleanCircleRequestForDb(request: CircleRequest) {
+  return {
+    id: request.id,
+    recipient_id: request.userId ?? null,
+    payload: request,
+    read: false
   };
 }
 
@@ -202,6 +324,37 @@ export const supabaseService = {
     }
   },
 
+  async getAdminAnalytics(): Promise<AdminAnalyticsSnapshot> {
+    if (!supabase || globalTablesMissing) {
+      return buildDefaultAnalyticsSnapshot(INITIAL_MEMBERS, INITIAL_POSTS);
+    }
+
+    try {
+      const [{ data: memberData, error: memberError }, { data: postData, error: postError }] = await Promise.all([
+        supabase.from('big_members').select('id, joinedAt').order('joinedAt', { ascending: true }),
+        supabase.from('big_posts').select('id, timestamp, comments').order('timestamp', { ascending: true })
+      ]);
+
+      if (memberError) {
+        handleSupabaseError('getAdminAnalytics members', memberError);
+        throw memberError;
+      }
+
+      if (postError) {
+        handleSupabaseError('getAdminAnalytics posts', postError);
+        throw postError;
+      }
+
+      return buildDefaultAnalyticsSnapshot(
+        (memberData || []) as Array<{ joinedAt?: string | null }>,
+        (postData || []) as Array<{ timestamp?: string | null; comments?: unknown }>
+      );
+    } catch (e: any) {
+      handleSupabaseError('getAdminAnalytics catch', e);
+      return buildDefaultAnalyticsSnapshot(INITIAL_MEMBERS, INITIAL_POSTS);
+    }
+  },
+
   // 2. Posts & Feed
   async getPosts(): Promise<Post[]> {
     if (!supabase || globalTablesMissing) return JSON.parse(localStorage.getItem('big_v2_posts') || 'null') || INITIAL_POSTS;
@@ -242,6 +395,7 @@ export const supabaseService = {
         const currentLikes = Array.isArray(post.likes) ? post.likes : [];
         return {
           ...post,
+          timestamp: normalizeSupabaseTimestamp(post.timestamp),
           likes: currentLikes.length as any, // Send integer length for DB schema compatibility
           likes_ids: currentLikes
         };
@@ -261,6 +415,7 @@ export const supabaseService = {
       const currentLikes = Array.isArray(post.likes) ? post.likes : [];
       const mappedPost = {
         ...post,
+        timestamp: normalizeSupabaseTimestamp(post.timestamp),
         likes: currentLikes.length as any, // Send integer length for DB schema compatibility
         likes_ids: currentLikes
       };
@@ -374,7 +529,73 @@ export const supabaseService = {
     }
   },
 
-  // 5. Conversations
+  // 5. Circles
+  async getCircles(): Promise<Circle[]> {
+    if (!supabase || globalTablesMissing) return JSON.parse(localStorage.getItem('big_v2_circles') || 'null') || INITIAL_CIRCLES;
+    try {
+      const { data, error } = await supabase
+        .from('big_circles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        handleSupabaseError('getCircles select', error);
+        throw error;
+      }
+      if (!data || data.length === 0) {
+        return INITIAL_CIRCLES;
+      }
+
+      return (data as any[]).map(row => ({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        image: row.image,
+        category: row.metadata?.category ?? 'custom',
+        memberCount: row.metadata?.memberCount ?? 0,
+        createdBy: row.created_by,
+        isJoined: row.metadata?.isJoined ?? false,
+        moderators: row.metadata?.moderators ?? [],
+        rules: row.metadata?.rules ?? [],
+        permissions: row.metadata?.permissions ?? undefined,
+        isSuspended: row.metadata?.isSuspended ?? false,
+        isBanned: row.metadata?.isBanned ?? false,
+        bannedMemberIds: row.metadata?.bannedMemberIds ?? [],
+        suspendedMemberIds: row.metadata?.suspendedMemberIds ?? [],
+        mutedMemberIds: row.metadata?.mutedMemberIds ?? [],
+        allowedPostTypes: row.metadata?.allowedPostTypes ?? []
+      })) as Circle[];
+    } catch (e: any) {
+      handleSupabaseError('getCircles catch', e);
+      return JSON.parse(localStorage.getItem('big_v2_circles') || 'null') || INITIAL_CIRCLES;
+    }
+  },
+
+  async saveCircle(circle: Circle) {
+    if (!supabase || globalTablesMissing) return;
+    try {
+      const { error } = await supabase.from('big_circles').upsert(cleanCircleForDb(circle), { onConflict: 'id' });
+      if (error) {
+        handleSupabaseError('saveCircle', error);
+      }
+    } catch (e: any) {
+      handleSupabaseError('saveCircle catch', e);
+    }
+  },
+
+  async saveCircleRequest(request: CircleRequest) {
+    if (!supabase || globalTablesMissing) return;
+    try {
+      const { error } = await supabase.from('big_notifications').upsert(cleanCircleRequestForDb(request), { onConflict: 'id' });
+      if (error) {
+        handleSupabaseError('saveCircleRequest', error);
+      }
+    } catch (e: any) {
+      handleSupabaseError('saveCircleRequest catch', e);
+    }
+  },
+
+  // 6. Conversations
   async getConversations(): Promise<Conversation[]> {
     if (!supabase || globalTablesMissing) return JSON.parse(localStorage.getItem('big_v2_conversations') || 'null') || INITIAL_CONVERSATIONS;
     try {

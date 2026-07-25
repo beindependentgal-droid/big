@@ -23,7 +23,6 @@ import {
 interface BIGFundViewProps {
   setCurrentView: (view: string) => void;
   isAuthenticated?: boolean;
-  triggerSimulatedEmail?: (subject: string, body: string) => void;
 }
 
 // Coordinate mappings for Kenya regional chapters on a 400x300 schematic canvas
@@ -88,7 +87,7 @@ const getNameGradient = (name: string) => {
   return colors[index];
 };
 
-export function BIGFundView({ setCurrentView, isAuthenticated = false, triggerSimulatedEmail }: BIGFundViewProps) {
+export function BIGFundView({ setCurrentView, isAuthenticated = false }: BIGFundViewProps) {
   // Navigation tabs: 'overview' | 'campaigns' | 'transparency' | 'impact'
   const [activeTab, setActiveTab] = useState<'overview' | 'campaigns' | 'transparency' | 'impact'>('overview');
 
@@ -574,35 +573,11 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false, triggerSi
       monthlySupporters: updatedSupporters
     });
 
-    // 5. Trigger simulated notification email for receipt transparency
-    if (triggerSimulatedEmail) {
-      const receiptBody = `
-        <div style="font-family: sans-serif; padding: 20px; color: #1e293b;">
-          <h2 style="color: #f59e0b;">BIG Fund Donation Receipt</h2>
-          <p>Dear ${payload.donorName},</p>
-          <p>Thank you for your generous contribution of <strong>KES ${payload.amount.toLocaleString()}</strong> towards the <strong>${payload.campaignTitle}</strong>.</p>
-          <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
-          <p><strong>Transaction Details:</strong></p>
-          <ul>
-            <li><strong>Donor:</strong> ${payload.donorName} (${payload.isAnonymous ? 'Anonymous on Public Feed' : 'Publicly listed'})</li>
-            <li><strong>Amount:</strong> KES ${payload.amount.toLocaleString()}</li>
-            <li><strong>Allocation:</strong> ${payload.campaignTitle}</li>
-            <li><strong>Method:</strong> ${payload.paymentProvider}</li>
-            <li><strong>Status:</strong> Completed</li>
-            <li><strong>Date:</strong> ${new Date().toLocaleDateString()}</li>
-          </ul>
-          <p>Your support directly builds economic sovereignty, technical literacy, and grassroots community leadership for women across Kenya. We pledge absolute financial accountability, with 100% of these funds deployed according to our transparent budget breakdown.</p>
-          <p>With deep gratitude,<br/><strong>The Be Independent Gal (BIG) Council</strong></p>
-        </div>
-      `;
-      triggerSimulatedEmail(`Receipt for your KES ${payload.amount.toLocaleString()} BIG Fund Donation`, receiptBody);
-    }
-
-    // Show beautiful success popup
+    // 5. Show success popup
     setSuccessBanner({
       show: true,
       title: 'Contribution Deployed Successfully! 🌟',
-      message: `Your donation of KES ${payload.amount.toLocaleString()} was processed. A detailed receipt has been dispatched to ${payload.donorEmail} and added to our transparency ledger.`,
+      message: `Your donation of KES ${payload.amount.toLocaleString()} was processed and recorded. A contribution receipt is available in your campaign summary.`,
       donationId: newDonation.id
     });
 
@@ -2465,7 +2440,6 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false, triggerSi
           }
         }}
         actionName="Deploy BIG Fund Contribution"
-        triggerSimulatedEmail={triggerSimulatedEmail}
       />
 
       {/* DEDICATED M-PESA STK PUSH INTEGRATION MODAL */}

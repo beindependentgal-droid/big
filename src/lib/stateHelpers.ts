@@ -96,3 +96,53 @@ export function updateMembers(currentMembers: Member[], updatedMember: Member): 
     return [...currentMembers, updatedMember];
   }
 }
+
+export function mergeMemberPreferences(member: Member, preferences?: Member['preferences']): Member {
+  return {
+    ...member,
+    preferences: {
+      messagePermissions: preferences?.messagePermissions ?? 'connections',
+      emailVerifyRequired: preferences?.emailVerifyRequired ?? false,
+      codeVerifyRequired: preferences?.codeVerifyRequired ?? false,
+      sessionTimeout: preferences?.sessionTimeout ?? 'never',
+      theme: preferences?.theme ?? 'light',
+      ...preferences,
+    },
+  };
+}
+
+export interface AcademyProgressState {
+  enrolledCourseIds: string[];
+  completedLessonIds: string[];
+  lessonNotes: Record<string, string>;
+  earnedCertificateIds: string[];
+  activeCourseId: string | null;
+  activeLessonId: string | null;
+}
+
+export function getDefaultAcademyProgressState(): AcademyProgressState {
+  return {
+    enrolledCourseIds: [],
+    completedLessonIds: [],
+    lessonNotes: {},
+    earnedCertificateIds: [],
+    activeCourseId: null,
+    activeLessonId: null,
+  };
+}
+
+export function mergeAcademyProgressState(
+  current: AcademyProgressState,
+  updates: Partial<AcademyProgressState>
+): AcademyProgressState {
+  return {
+    ...current,
+    ...updates,
+    enrolledCourseIds: updates.enrolledCourseIds ?? current.enrolledCourseIds,
+    completedLessonIds: updates.completedLessonIds ?? current.completedLessonIds,
+    lessonNotes: updates.lessonNotes ?? current.lessonNotes,
+    earnedCertificateIds: updates.earnedCertificateIds ?? current.earnedCertificateIds,
+    activeCourseId: updates.activeCourseId ?? current.activeCourseId,
+    activeLessonId: updates.activeLessonId ?? current.activeLessonId,
+  };
+}

@@ -1235,7 +1235,7 @@ export function ProfileView({
               {uploadMethod === 'storage' && (
                 <div className="flex items-center gap-1.5 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2 text-emerald-800 text-[10px] font-medium w-full">
                   <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  <span className="leading-tight text-left">Uploaded directly to your <strong>Supabase Storage</strong>! (+15 Pts)</span>
+                  <span className="leading-tight text-left">Uploaded directly to storage service! (+15 Pts)</span>
                 </div>
               )}
 

@@ -240,7 +240,7 @@ app.get("/api/auth/verify-session", authenticateToken, (req, res) => {
 });
 
 // 2. Register
-app.post("/api/auth/register", authLimiter, (req, res) => {
+app.post("/api/auth/register", authLimiter, async (req, res) => {
   try {
     const { name, email, password, biometricCredentialId } = req.body;
     if (!name || !email || !password) {
@@ -302,12 +302,28 @@ app.post("/api/auth/register", authLimiter, (req, res) => {
     });
 
     saveDb(db);
-    void sendMailWithResend({
-      to: cleanEmail,
-      subject: `🌸 Welcome to Be Independent Gal (BIG) Platform, ${name}!`,
-      text: buildWelcomeEmailPayload(name).text,
-      html: buildWelcomeEmailPayload(name).html
-    }).catch((error) => console.warn('Welcome email delivery failed:', error));
+    
+    // Attempt to send welcome email
+    let emailSendStatus = 'pending';
+    let emailError: string | null = null;
+    
+    try {
+      await sendMailWithResend({
+        to: cleanEmail,
+        subject: `🌸 Welcome to Be Independent Gal (BIG) Platform, ${name}!`,
+        text: buildWelcomeEmailPayload(name).text,
+        html: buildWelcomeEmailPayload(name).html
+      });
+      emailSendStatus = 'sent';
+      console.log(`[WELCOME EMAIL SENT] to ${cleanEmail}`);
+    } catch (error: any) {
+      emailError = error.message || 'Email service temporarily unavailable';
+      console.warn(`[WELCOME EMAIL FAILED] to ${cleanEmail}: ${emailError}`);
+      
+      // Don't fail registration, just log the email error
+      // User can still use the platform
+      emailSendStatus = 'failed';
+    }
 
     writeAuditLog(userId, cleanEmail, "Account registration successful", req.ip || 'unknown');
 
@@ -418,8 +434,7 @@ app.get("/api/auth/google/url", (req, res) => {
   try {
     const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID;
     if (!clientId) {
-      // Run in elegant simulation fallback mode in development or when keys aren't set
-      return res.json({ isSimulated: true });
+      return res.status(500).json({ error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET." });
     }
 
     const origin = (req.query.origin as string) || getExternalOrigin(req);
@@ -438,7 +453,7 @@ app.get("/api/auth/google/url", (req, res) => {
       state: stateStr
     }).toString();
 
-    res.json({ isSimulated: false, url: authUrl });
+    res.json({ url: authUrl });
   } catch (error) {
     console.error("Google Auth URL generation error:", error);
     res.status(500).json({ error: "Failed to generate Google auth URL" });
@@ -598,84 +613,6 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
   }
 });
 
-// Google OAuth Simulation Endpoint for Local/Interactive Preview Fallback
-app.post("/api/auth/google/simulate", authLimiter, (req, res) => {
-  try {
-    const { name, email } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-
-    const db = loadDb();
-    const cleanEmail = email.trim().toLowerCase();
-    let user = db.members.find(m => m.email?.toLowerCase() === cleanEmail);
-
-    if (!user) {
-      const userId = `user-google-sim-${Date.now()}`;
-      const salt = generateSalt();
-      const hash = hashPassword(crypto.randomBytes(16).toString('hex'), salt);
-
-      const pinSalt = generateSalt();
-      const pinHash = hashPassword('123456', pinSalt);
-
-      const resolvedName = name || 'BIG Sister';
-      user = {
-        id: userId,
-        name: truncateString(resolvedName, 100),
-        email: cleanEmail,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(resolvedName)}&background=random`,
-        title: 'Aspiring Entrepreneur',
-        city: 'Lagos',
-        rank: 'Learner' as const,
-        skills: [],
-        interests: [],
-        bio: '',
-        points: 0,
-        badges: [],
-        passwordHash: hash,
-        passwordSalt: salt,
-        pinHash: pinHash,
-        pinSalt: pinSalt,
-        joinedAt: new Date().toISOString()
-      };
-
-      db.members.push(user);
-
-      // Welcome Email Simulation
-      if (!db.simulatedEmails) db.simulatedEmails = [];
-      db.simulatedEmails.unshift({
-        id: `mail-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
-        to: cleanEmail,
-        subject: `🌸 Welcome to Be Independent Gal (BIG) Platform, ${resolvedName}!`,
-        body: `Hi ${resolvedName},\n\n` +
-          `Welcome to the BIG global sisterhood! Your account has been initialized successfully in simulated Google Sign-In.\n\n` +
-          `You now have full access to our community feeds, BIG Academy seed grants, peer mentorship circles, micro-business tools, and BIG Fund impact campaigns.\n\n` +
-          `Explore your dashboard and build your independent future with us!\n\n` +
-          `Warmly,\n` +
-          `The BIG Foundation Team\n` +
-          `https://bigfund.org`,
-        timestamp: Date.now()
-      });
-
-      saveDb(db);
-      const welcomePayload = buildWelcomeEmailPayload(resolvedName);
-      void sendMailWithResend({
-        to: cleanEmail,
-        subject: welcomePayload.subject,
-        text: welcomePayload.text,
-        html: welcomePayload.html
-      }).catch((error) => console.warn('Simulated Google welcome email delivery failed:', error));
-    }
-
-    const token = createSessionToken(user.id, cleanEmail);
-    writeAuditLog(user.id, cleanEmail, "Simulated Google Sign-In successful", req.ip || 'unknown');
-    res.json({ token, user });
-  } catch (error) {
-    console.error("Simulation Google error:", error);
-    res.status(500).json({ error: "Google simulation sign-in failed" });
-  }
-});
-
 async function sendMailWithResend(params: { to: string; subject: string; text: string; html: string }) {
   const resend = getResendClient();
   if (!resend) {
@@ -735,6 +672,7 @@ app.post("/api/auth/request-otp", authLimiter, async (req, res) => {
 
     const payload = buildOtpEmailPayload(code, actionName || 'Sensitive Action');
 
+    let emailSent = false;
     try {
       await sendMailWithResend({
         to: email,
@@ -742,13 +680,21 @@ app.post("/api/auth/request-otp", authLimiter, async (req, res) => {
         text: payload.text,
         html: payload.html
       });
-    } catch (error) {
-      console.warn('Resend OTP dispatch failed, continuing with local fallback:', error);
+      emailSent = true;
+      console.log(`[SECURITY OTP EMAIL SENT] to ${email}`);
+    } catch (error: any) {
+      console.warn(`[SECURITY OTP EMAIL FAILED] to ${email}:`, error.message);
+      // Don't fail the request - code is still stored, user can get it from logs if needed
     }
 
-    console.log(`[SECURITY OTP DISPATCHED TO ${email}]: Code is ${code}`);
+    console.log(`[SECURITY OTP DISPATCHED TO ${email}]: Code is ${code}. Email status: ${emailSent ? 'sent' : 'pending/failed'}.`);
 
-    res.json({ success: true, message: "A secure verification code has been dispatched." });
+    res.json({ 
+      success: true, 
+      message: emailSent 
+        ? "A secure verification code has been dispatched to your email." 
+        : "Code generated. Check your email (or browser console if email service is in test mode)."
+    });
   } catch (error) {
     console.error("Request OTP error:", error);
     res.status(500).json({ error: "Failed to dispatch verification code" });
@@ -777,7 +723,7 @@ app.post("/api/auth/verify-otp", authLimiter, (req, res) => {
 
     const enteredHash = crypto.createHash('sha256').update(code.trim()).digest('hex');
     if (enteredHash !== otpInfo.hash) {
-      return res.status(400).json({ error: "Invalid verification code. Please check your simulated mailbox." });
+      return res.status(400).json({ error: "Invalid verification code. Please verify the email code and try again." });
     }
 
     // Single-use: delete upon success
@@ -833,6 +779,8 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
     saveDb(db);
 
     const resetPayload = buildPasswordResetEmailPayload(code.trim());
+    let resetEmailSent = false;
+    
     try {
       await sendMailWithResend({
         to: cleanEmail,
@@ -840,12 +788,20 @@ app.post("/api/auth/reset-password", authLimiter, async (req, res) => {
         text: resetPayload.text,
         html: resetPayload.html
       });
-    } catch (error) {
-      console.warn('Resend password reset confirmation failed:', error);
+      resetEmailSent = true;
+      console.log(`[PASSWORD RESET CONFIRMATION EMAIL SENT] to ${cleanEmail}`);
+    } catch (error: any) {
+      console.warn(`[PASSWORD RESET CONFIRMATION EMAIL FAILED] to ${cleanEmail}:`, error.message);
+      // Don't fail the reset - password is already changed
     }
 
     writeAuditLog(user.id, cleanEmail, "Password reset successful", req.ip || 'unknown');
-    res.json({ success: true, message: "Your password was reset successfully." });
+    res.json({ 
+      success: true, 
+      message: resetEmailSent 
+        ? "Your password was reset successfully. A confirmation email has been sent." 
+        : "Your password was reset successfully." 
+    });
   } catch (error) {
     console.error("Reset password error:", error);
     res.status(500).json({ error: "Failed to reset password" });
@@ -912,22 +868,7 @@ app.post("/api/security/verify-pin", authenticateToken, (req, res) => {
   }
 });
 
-// 8. Fetch real email dispatch logs & status
-app.get("/api/email/status", (req, res) => {
-  try {
-    const isConfigured = Boolean(process.env.RESEND_API_KEY);
-    const db = loadDb();
-    res.json({
-      isConfigured,
-      fromEmail: getResendFromEmail(),
-      sentEmailLogs: db.sentEmailLogs || []
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch email service status" });
-  }
-});
-
-// 8b. Real Send Email API Endpoint using Resend
+// 8. Real Send Email API Endpoint using Resend
 app.post("/api/email/send", generalLimiter, async (req, res) => {
   try {
     const { to, subject, body, template, donorName, campaignTitle, amount, receiptNumber } = req.body;
@@ -1316,6 +1257,16 @@ app.post("/api/db/sync", authenticateToken, (req, res) => {
     }
     if (clientState.bookmarkedPostIds && Array.isArray(clientState.bookmarkedPostIds)) {
       db.bookmarkedPostIds = clientState.bookmarkedPostIds;
+    }
+    if (clientState.academyProgress && typeof clientState.academyProgress === 'object') {
+      db.academyProgress = {
+        enrolledCourseIds: Array.isArray(clientState.academyProgress.enrolledCourseIds) ? clientState.academyProgress.enrolledCourseIds : [],
+        completedLessonIds: Array.isArray(clientState.academyProgress.completedLessonIds) ? clientState.academyProgress.completedLessonIds : [],
+        lessonNotes: clientState.academyProgress.lessonNotes && typeof clientState.academyProgress.lessonNotes === 'object' ? clientState.academyProgress.lessonNotes : {},
+        earnedCertificateIds: Array.isArray(clientState.academyProgress.earnedCertificateIds) ? clientState.academyProgress.earnedCertificateIds : [],
+        activeCourseId: clientState.academyProgress.activeCourseId || null,
+        activeLessonId: clientState.academyProgress.activeLessonId || null,
+      };
     }
     if (clientState.notifications && Array.isArray(clientState.notifications)) {
       db.notifications = clientState.notifications;

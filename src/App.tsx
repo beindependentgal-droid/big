@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { calculatePointsAndBadges, updateMembers } from './lib/stateHelpers';
+import { calculatePointsAndBadges, updateMembers, getDefaultAcademyProgressState, mergeAcademyProgressState } from './lib/stateHelpers';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { ChatWidget } from './components/ChatWidget';
@@ -19,7 +20,6 @@ import { OnboardingView } from './components/OnboardingView';
 import { TourOverlay } from './components/TourOverlay';
 import { JobBoardView } from './components/JobBoardView';
 import { GoalTrackerView } from './components/GoalTrackerView';
-import { EmailMailboxModal } from './components/EmailMailboxModal';
 import { AboutView } from './components/AboutView';
 import { BIGClubView } from './components/BIGClubView';
 import { ContactView } from './components/ContactView';
@@ -86,7 +86,6 @@ export default function App() {
   const [currentView, setCurrentView] = useState<string>(() => {
     const isAuth = localStorage.getItem('big_v2_is_auth') === 'true';
     const view = isAuth ? 'feeds' : 'home';
-    console.log('App.tsx initial currentView:', view, 'isAuth:', isAuth);
     return view;
   });
   const [previousView, setPreviousView] = useState<string>('feeds');
@@ -104,7 +103,6 @@ export default function App() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isComposerOpen, setIsComposerOpen] = useState<boolean>(false);
-  const [isEmailMailboxOpen, setIsEmailMailboxOpen] = useState<boolean>(false);
   const [showTour, setShowTour] = useState<boolean>(false);
 
   useEffect(() => {
@@ -162,13 +160,6 @@ export default function App() {
         localStorage.setItem('big_v2_is_auth', 'false');
         setCurrentView('home');
         setSessionExpiredAlert(true);
-        
-        // Trigger simulated email notification
-        setActiveEmail({
-          subject: "Session Expired 🔐",
-          from: "security@beindependentgal.com",
-          body: "For your security, you have been automatically logged out due to inactivity. Please log back in to continue your session."
-        });
       }
     }, 5000); // Check every 5 seconds
 
@@ -287,10 +278,8 @@ export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
   const [circleTab, setCircleTab] = useState<'learn' | 'connect' | 'earn' | 'thrive'>('learn');
 
-  // Supabase states
+  // Supabase state
   const [supabaseConnected, setSupabaseConnected] = useState<boolean>(false);
-  const [showSupabaseSetup, setShowSupabaseSetup] = useState<boolean>(false);
-  const [copiedSql, setCopiedSql] = useState<boolean>(false);
 
 
   // Shared application states with LocalStorage persistence
@@ -446,6 +435,7 @@ export default function App() {
     setConnections(prev => {
       const next = [...prev, { userId, status: 'Pending' as const }];
       localStorage.setItem('big_v2_connections', JSON.stringify(next));
+      apiService.syncState({ notifications, userPoints, userBadges, followingIds, bookmarkedPostIds, circleRequests, members, posts, events, challenges, conversations, mentorshipPairs, circles }).catch(err => console.warn('Failed to sync connection state to backend:', err));
       return next;
     });
     setToast({
@@ -469,6 +459,7 @@ export default function App() {
         next.push({ userId, status: 'Connected' as const });
       }
       localStorage.setItem('big_v2_connections', JSON.stringify(next));
+      apiService.syncState({ notifications, userPoints, userBadges, followingIds, bookmarkedPostIds, circleRequests, members, posts, events, challenges, conversations, mentorshipPairs, circles }).catch(err => console.warn('Failed to sync connection state to backend:', err));
       return next;
     });
 
@@ -501,6 +492,16 @@ export default function App() {
     return saved ? JSON.parse(saved) : ['post-1'];
   });
 
+  const [academyProgress, setAcademyProgress] = useState(() => {
+    const saved = localStorage.getItem('big_v2_academy_progress');
+    if (!saved) return getDefaultAcademyProgressState();
+    try {
+      return mergeAcademyProgressState(getDefaultAcademyProgressState(), JSON.parse(saved));
+    } catch {
+      return getDefaultAcademyProgressState();
+    }
+  });
+
   const toggleFollow = (memberId: string) => {
     let nextFollowingIds: string[] = [];
     
@@ -508,6 +509,13 @@ export default function App() {
       const isFollowing = prev.includes(memberId);
       const next = isFollowing ? prev.filter(id => id !== memberId) : [...prev, memberId];
       localStorage.setItem('big_v2_following_ids', JSON.stringify(next));
+      if (isSupabaseConfigured()) {
+        void supabaseService.saveMember({
+          ...currentUser,
+          followingIds: next,
+          id: currentUserId
+        } as Member);
+      }
       
       nextFollowingIds = next;
 
@@ -583,6 +591,13 @@ export default function App() {
       const isBookmarked = prev.includes(postId);
       const next = isBookmarked ? prev.filter(id => id !== postId) : [...prev, postId];
       localStorage.setItem('big_v2_bookmarked_post_ids', JSON.stringify(next));
+      if (isSupabaseConfigured()) {
+        void supabaseService.saveMember({
+          ...currentUser,
+          id: currentUserId,
+          followingIds: followingIds
+        } as Member);
+      }
       
       if (!isBookmarked) {
         addPoints(5);
@@ -609,6 +624,7 @@ export default function App() {
     setNotifications(prev => {
       const next = [newNotif, ...prev];
       localStorage.setItem('big_v2_notifications', JSON.stringify(next));
+      apiService.syncState({ notifications: next }).catch(err => console.warn('Failed to sync notifications to backend:', err));
       return next;
     });
   };
@@ -623,8 +639,6 @@ export default function App() {
       { id: 'not-0', title: 'Welcome to Be Independent Gal platform! You currently have 320 points.', read: false }
     ];
   });
-
-  const [activeEmail, setActiveEmail] = useState<{ subject: string; from: string; body: string } | null>(null);
 
   // Computed dynamic current user profile reading from members state
   const foundYou = members.find(m => m.id === currentUserId);
@@ -718,10 +732,6 @@ export default function App() {
           
           if (areTablesMissing()) {
             setSupabaseConnected(false);
-            setNotifications(prev => [
-              { id: `not-sb-missing-${Date.now()}`, title: '⚠️ Supabase is configured, but tables are missing in your project! Open the Integration Panel to get the SQL script.', read: false },
-              ...prev
-            ]);
             return;
           }
 
@@ -749,11 +759,6 @@ export default function App() {
           }
           
           setSupabaseConnected(true);
-          
-          setNotifications(prev => [
-            { id: `not-sb-${Date.now()}`, title: '🎉 Connected successfully to your live Supabase database!', read: false },
-            ...prev
-          ]);
         } catch (err) {
           console.warn('Failed to load from Supabase:', err);
           setSupabaseConnected(false);
@@ -825,17 +830,73 @@ export default function App() {
     if (circles.length > 0) {
       apiService.syncState({ circles }).catch(err => console.warn('Failed to sync circles to backend:', err));
     }
+    if (isSupabaseConfigured() && circles.length > 0) {
+      circles.forEach(circle => {
+        void supabaseService.saveCircle(circle);
+      });
+    }
   }, [circles]);
+
+  useEffect(() => {
+    localStorage.setItem('big_v2_circle_requests', JSON.stringify(circleRequests));
+    if (isSupabaseConfigured() && circleRequests.length > 0) {
+      circleRequests.forEach(request => {
+        void supabaseService.saveCircleRequest(request);
+      });
+    }
+  }, [circleRequests]);
 
   useEffect(() => {
     localStorage.setItem('big_v2_user_points', userPoints.toString());
     apiService.syncState({ userPoints }).catch(err => console.warn('Failed to sync userPoints to backend:', err));
-  }, [userPoints]);
+    if (isSupabaseConfigured()) {
+      void supabaseService.saveMember({ ...currentUser, points: userPoints, badges: userBadges, id: currentUserId } as Member);
+    }
+  }, [userPoints, userBadges, currentUserId]);
 
   useEffect(() => {
     localStorage.setItem('big_v2_user_badges', JSON.stringify(userBadges));
     apiService.syncState({ userBadges }).catch(err => console.warn('Failed to sync userBadges to backend:', err));
-  }, [userBadges]);
+    if (isSupabaseConfigured()) {
+      void supabaseService.saveMember({ ...currentUser, points: userPoints, badges: userBadges, id: currentUserId } as Member);
+    }
+  }, [userBadges, userPoints, currentUserId]);
+
+  useEffect(() => {
+    localStorage.setItem('big_v2_following_ids', JSON.stringify(followingIds));
+    apiService.syncState({ followingIds }).catch(err => console.warn('Failed to sync followingIds to backend:', err));
+    if (isSupabaseConfigured()) {
+      void supabaseService.saveMember({ ...currentUser, followingIds, id: currentUserId } as Member);
+    }
+  }, [followingIds, currentUserId]);
+
+  useEffect(() => {
+    localStorage.setItem('big_v2_bookmarked_post_ids', JSON.stringify(bookmarkedPostIds));
+    apiService.syncState({ bookmarkedPostIds }).catch(err => console.warn('Failed to sync bookmarkedPostIds to backend:', err));
+  }, [bookmarkedPostIds]);
+
+  useEffect(() => {
+    localStorage.setItem('big_v2_academy_progress', JSON.stringify(academyProgress));
+    apiService.syncState({
+      members,
+      userPoints,
+      userBadges,
+      followingIds,
+      bookmarkedPostIds,
+      notifications,
+      circleRequests,
+      circles,
+      posts,
+      events,
+      challenges,
+      conversations,
+      mentorshipPairs,
+      academyProgress
+    }).catch(err => console.warn('Failed to sync academy progress to backend:', err));
+    if (isSupabaseConfigured()) {
+      void supabaseService.saveMember({ ...currentUser, points: userPoints, badges: userBadges, followingIds, id: currentUserId } as Member);
+    }
+  }, [academyProgress, members, userPoints, userBadges, followingIds, bookmarkedPostIds, notifications, circleRequests, circles, posts, events, challenges, conversations, mentorshipPairs, currentUser, currentUserId]);
 
   useEffect(() => {
     localStorage.setItem('big_v2_circle_requests', JSON.stringify(circleRequests));
@@ -890,11 +951,41 @@ export default function App() {
   };
 
   const handleSaveProfile = (updatedUser: Member) => {
-    setMembers(prev => updateMembers(prev, updatedUser));
+    const nextMember = updatedUser.id === currentUserId
+      ? {
+          ...updatedUser,
+          preferences: {
+            messagePermissions: updatedUser.preferences?.messagePermissions ?? 'connections',
+            emailVerifyRequired: updatedUser.preferences?.emailVerifyRequired ?? false,
+            codeVerifyRequired: updatedUser.preferences?.codeVerifyRequired ?? false,
+            sessionTimeout: updatedUser.preferences?.sessionTimeout ?? 'never',
+            theme: updatedUser.preferences?.theme ?? 'light',
+            ...updatedUser.preferences,
+          }
+        }
+      : updatedUser;
+
+    setMembers(prev => updateMembers(prev, nextMember));
 
     if (isSupabaseConfigured()) {
-      supabaseService.saveMember(updatedUser);
+      supabaseService.saveMember(nextMember);
     }
+
+    apiService.syncState({
+      members: updateMembers(members, nextMember),
+      userPoints,
+      userBadges,
+      followingIds,
+      bookmarkedPostIds,
+      notifications,
+      circleRequests,
+      circles,
+      posts,
+      events,
+      challenges,
+      conversations,
+      mentorshipPairs
+    }).catch(err => console.warn('Failed to sync profile update to backend:', err));
 
     if (updatedUser.id === currentUserId) {
       setToast({
@@ -949,7 +1040,6 @@ export default function App() {
   const unreadMessagesCount = conversations.filter(c => c.unread).length;
 
   useEffect(() => {
-    console.log('App.tsx currentView:', currentView);
   }, [currentView]);
 
   return (
@@ -1006,74 +1096,21 @@ export default function App() {
           setCurrentCircleId={setCurrentCircleId}
           searchQuery={searchQuery}
           setSearchQuery={handleSearchQueryChange}
-          onOpenEmailMailbox={() => setIsEmailMailboxOpen(true)}
         />
 
-        {/* CORE DISPLAY WINDOW */}
-        <div className="flex-grow flex w-full">
-          {!['onboarding', 'auth'].includes(currentView) && (
-            <LeftSidebar 
-              currentView={currentView} 
-              setCurrentView={handleNavigation} 
-              unreadCount={unreadMessagesCount} 
-              mobileMenuOpen={mobileMenuOpen}
-              setMobileMenuOpen={setMobileMenuOpen}
-            />
-          )}
-          <div className="flex-1 min-w-0 pb-20 lg:pb-0 p-4 lg:p-8">
-          {currentView === 'auth' && (
+        <ErrorBoundary>
+        {currentView === 'auth' && (
           <AuthView
             onAuthSuccess={(isNewUser, name, email) => {
-              localStorage.setItem('big_v2_is_auth', 'true');
               setIsAuthenticated(true);
-              
-              if (isNewUser && name && email) {
-                const newUserId = `user-${Date.now()}`;
-                setCurrentUserId(newUserId);
-                localStorage.setItem('big_v2_current_user_id', newUserId);
+              localStorage.setItem('big_v2_is_auth', 'true');
 
-                localStorage.setItem('big_v2_following_ids', JSON.stringify([]));
-                localStorage.setItem('big_v2_bookmarked_post_ids', JSON.stringify([]));
-                localStorage.setItem('big_v2_user_points', JSON.stringify(0));
-                localStorage.setItem('big_v2_user_badges', JSON.stringify([]));
-                localStorage.setItem('big_v2_connections', JSON.stringify([]));
-                localStorage.setItem('big_v2_circle_requests', JSON.stringify([]));
-                localStorage.setItem('big_v2_notifications', JSON.stringify([]));
-                
-                setFollowingIds([]);
-                setBookmarkedPostIds([]);
-                setUserPoints(0);
-                setUserBadges([]);
-                setConnections([]);
-                setCircleRequests([]);
-                setNotifications([]);
-
-                const newProfile = {
-                  id: newUserId,
-                  name,
-                  email,
-                  avatar: '',
-                  title: '',
-                  city: '',
-                  rank: 'Learner',
-                  skills: [],
-                  interests: [],
-                  bio: '',
-                  business_stage: '',
-                  mentoring_capacity: '',
-                  circleIds: []
-                };
-
-                let updatedMembers = [...members];
-                updatedMembers.push(newProfile as Member);
-                setMembers(updatedMembers);
-                localStorage.setItem('big_v2_members', JSON.stringify(updatedMembers));
-              } else if (email) {
+              if (name && email) {
                 const existingUser = members.find(m => m.email === email);
                 if (existingUser) {
                   setCurrentUserId(existingUser.id);
                   localStorage.setItem('big_v2_current_user_id', existingUser.id);
-                  
+
                   if (existingUser.points !== undefined) {
                     setUserPoints(existingUser.points);
                     localStorage.setItem('big_v2_user_points', JSON.stringify(existingUser.points));
@@ -1081,6 +1118,7 @@ export default function App() {
                     setUserPoints(0);
                     localStorage.setItem('big_v2_user_points', JSON.stringify(0));
                   }
+
                   if (existingUser.badges !== undefined) {
                     setUserBadges(existingUser.badges);
                     localStorage.setItem('big_v2_user_badges', JSON.stringify(existingUser.badges));
@@ -1089,13 +1127,25 @@ export default function App() {
                     localStorage.setItem('big_v2_user_badges', JSON.stringify([]));
                   }
                 } else {
-                  const fallbackId = `user-${Date.now()}`;
-                  setCurrentUserId(fallbackId);
-                  localStorage.setItem('big_v2_current_user_id', fallbackId);
-                  
+                  const newUserId = `user-${Date.now()}`;
+                  setCurrentUserId(newUserId);
+                  localStorage.setItem('big_v2_current_user_id', newUserId);
+                  localStorage.setItem('big_v2_user_badges', JSON.stringify([]));
+                  localStorage.setItem('big_v2_connections', JSON.stringify([]));
+                  localStorage.setItem('big_v2_circle_requests', JSON.stringify([]));
+                  localStorage.setItem('big_v2_notifications', JSON.stringify([]));
+
+                  setFollowingIds([]);
+                  setBookmarkedPostIds([]);
+                  setUserPoints(0);
+                  setUserBadges([]);
+                  setConnections([]);
+                  setCircleRequests([]);
+                  setNotifications([]);
+
                   const newProfile = {
-                    id: fallbackId,
-                    name: name || email.split('@')[0],
+                    id: newUserId,
+                    name,
                     email,
                     avatar: '',
                     title: '',
@@ -1108,12 +1158,13 @@ export default function App() {
                     mentoring_capacity: '',
                     circleIds: []
                   };
-                  let updatedMembers = [...members];
-                  updatedMembers.push(newProfile as Member);
+
+                  const updatedMembers = [...members, newProfile as Member];
                   setMembers(updatedMembers);
                   localStorage.setItem('big_v2_members', JSON.stringify(updatedMembers));
                 }
               }
+
               setCurrentView(isNewUser ? 'onboarding' : 'feeds');
             }}
           />
@@ -1138,14 +1189,8 @@ export default function App() {
 
               setCurrentView('feeds');
               
-              // Trigger simulated email notification
               setTimeout(() => {
-                setActiveEmail({
-                  subject: "Welcome to the Sisterhood! 🌸",
-                  from: "hello@beindependentgal.com",
-                  body: `Hi ${profileData.name || 'Sister'}! Your profile is now live. We've added you to the 'Learn' and 'Connect' circles to get you started.`
-                });
-                addNotification("Welcome email sent to your inbox!");
+                addNotification("Welcome to the Sisterhood! Your profile is now live.");
               }, 1500);
             }}
           />
@@ -1175,7 +1220,6 @@ export default function App() {
             <BIGFundView 
               setCurrentView={handleNavigation} 
               isAuthenticated={isAuthenticated}
-              triggerSimulatedEmail={(subject, body) => setActiveEmail({ subject, from: 'security@beindependentgal.com', body })}
             />
           </Suspense>
         )}
@@ -1193,6 +1237,8 @@ export default function App() {
             }}
             isAuthenticated={isAuthenticated}
             setCurrentView={handleNavigation}
+            academyProgress={academyProgress}
+            setAcademyProgress={setAcademyProgress}
           />
         )}
 
@@ -1258,7 +1304,6 @@ export default function App() {
               currentUser={currentUser}
               onSaveProfile={handleSaveProfile}
               addPoints={addPoints}
-              triggerSimulatedEmail={(subject, body) => setActiveEmail({ subject, from: 'security@beindependentgal.com', body })}
             />
           </Suspense>
         )}
@@ -1485,7 +1530,6 @@ export default function App() {
             />
           </Suspense>
         )}
-        {console.log('App.tsx rendering feeds:', { currentView, membersCount: members.length, postsCount: posts.length })}
 
         {currentView === 'search' && (
           <SearchView 
@@ -1533,8 +1577,6 @@ export default function App() {
         {currentView === 'goal-tracker' && (
           <GoalTrackerView currentUser={currentUser} addPoints={addPoints} />
         )}
-          </div>
-        </div>
 
         {/* FOOTER */}
         {['home', 'about', 'contact', 'big-club', 'programs', 'big-fund', 'academy'].includes(currentView) && (
@@ -1544,8 +1586,9 @@ export default function App() {
         {isAuthenticated && (
           <BottomNav currentView={currentView} setCurrentView={handleNavigation} onOpenComposer={() => setIsComposerOpen(true)} />
         )}
+        <ScrollToTop />
+        </ErrorBoundary>
       </main>
-    </div>
 
       {/* SUPPORT & CHAT WIDGET */}
       {!isAuthenticated && <ChatWidget />}
@@ -1612,105 +1655,6 @@ export default function App() {
         </div>
       )}
 
-      {/* FLOATING SUPABASE INTEGRATION ASSISTANT */}
-      <div className="fixed bottom-6 left-6 z-40">
-        <button
-          onClick={() => setShowSupabaseSetup(!showSupabaseSetup)}
-          className={`flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-bold shadow-lg transition-all border ${
-            supabaseConnected
-              ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-              : 'bg-slate-900 text-white border-slate-800 hover:bg-slate-800'
-          }`}
-        >
-          <Database className={`h-4 w-4 ${supabaseConnected ? 'text-emerald-600 animate-pulse' : 'text-slate-400'}`} />
-          <span>Supabase: {supabaseConnected ? 'Connected (Live)' : 'Using Local Fallback'}</span>
-          <span className="ml-1 rounded-full bg-black/10 px-1.5 py-0.5 text-[9px] uppercase tracking-wider">
-            {supabaseConnected ? 'Synced' : 'Setup'}
-          </span>
-        </button>
-
-        {showSupabaseSetup && (
-          <div className="absolute bottom-12 left-0 mt-2 w-96 max-h-[480px] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl animate-fade-in text-xs space-y-4">
-            <div className="flex items-center justify-between border-b pb-2">
-              <div className="flex items-center gap-1.5">
-                <Database className="h-4.5 w-4.5 text-primary" />
-                <h3 className="font-heading font-extrabold text-primary">Supabase Integration Panel</h3>
-              </div>
-              <button 
-                onClick={() => setShowSupabaseSetup(false)}
-                className="rounded-full p-1 hover:bg-slate-100 text-slate-400"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            {supabaseConnected ? (
-              <div className="rounded-2xl bg-emerald-50/50 border border-emerald-100 p-3.5 space-y-2 text-emerald-950">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold">Live Synced & Connected!</h4>
-                    <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5">
-                      Your app is actively synchronized with your Supabase backend. Any posts you write, events you RSVP to, and points you earn are saved directly in the cloud database.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-2xl bg-amber-50/40 border border-amber-100 p-3.5 space-y-2">
-                <div className="flex items-start gap-2">
-                  <AlertTriangle className="h-4.5 w-4.5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-bold text-amber-900">Using Offline/LocalStorage Fallback</h4>
-                    <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5">
-                      The app has loaded our standard high-quality static database and persists all edits directly to your local browser storage. This ensures the site runs perfectly instantly!
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-2.5">
-              <h4 className="font-bold text-primary flex items-center gap-1">
-                <FileText className="h-3.5 w-3.5 text-primary" />
-                <span>How to link your Supabase DB:</span>
-              </h4>
-              <ol className="list-decimal list-inside space-y-1.5 text-[11px] text-slate-600 pl-1 font-medium">
-                <li>Create a project on <a href="https://supabase.com" target="_blank" rel="noreferrer" className="text-secondary font-bold hover:underline">supabase.com</a></li>
-                <li>Go to **Settings &gt; API** inside your Supabase dashboard</li>
-                <li>Set these two variables in your local environment or the platformsecrets menu:</li>
-              </ol>
-              <div className="bg-slate-50 border rounded-xl p-2.5 space-y-1.5 font-mono text-[10px] text-slate-700">
-                <div>VITE_SUPABASE_URL="your-supabase-url"</div>
-                <div>VITE_SUPABASE_ANON_KEY="your-anon-key"</div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-primary">Table Generation SQL Script</h4>
-                <button
-                  onClick={async () => {
-                    await copyToClipboard(supabaseService.getSupabaseSQLSetup());
-                    setCopiedSql(true);
-                    setTimeout(() => setCopiedSql(false), 2000);
-                  }}
-                  className="flex items-center gap-1 rounded-full bg-slate-100 hover:bg-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-700 transition-colors"
-                >
-                  <Copy className="h-3 w-3" />
-                  <span>{copiedSql ? 'Copied!' : 'Copy SQL'}</span>
-                </button>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Copy and run this schema code directly inside your Supabase **SQL Editor** to instantly initialize all 6 tables with proper types and row policies:
-              </p>
-              <pre className="bg-slate-900 text-slate-300 rounded-xl p-3 text-[9px] font-mono overflow-x-auto max-h-40 border border-slate-800">
-                {supabaseService.getSupabaseSQLSetup()}
-              </pre>
-            </div>
-          </div>
-        )}
-      </div>
 
             {/* Profile Completion Modal */}
         {showProfileModal && (
@@ -1810,12 +1754,8 @@ export default function App() {
             </div>
           )}
         </AnimatePresence>
-        <ScrollToTop />
-        <EmailMailboxModal 
-          isOpen={isEmailMailboxOpen} 
-          onClose={() => setIsEmailMailboxOpen(false)} 
-          defaultUserEmail={currentUser?.email || 'beindependentgal@gmail.com'} 
-        />
+        </ErrorBoundary>
+
         {/* GET STARTED TOUR */}
       <AnimatePresence>
         {showTour && (

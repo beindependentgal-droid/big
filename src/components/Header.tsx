@@ -29,7 +29,6 @@ import {
   Home,
   Target,
   Bookmark,
-  Mail,
   HeartHandshake,
   UserCheck
 } from 'lucide-react';
@@ -64,7 +63,6 @@ interface HeaderProps {
   setCurrentCircleId?: (id: string | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  onOpenEmailMailbox?: () => void;
 }
 
 export function Header({ 
@@ -95,7 +93,6 @@ export function Header({
   setCurrentCircleId,
   searchQuery,
   setSearchQuery,
-  onOpenEmailMailbox
 }: HeaderProps) {
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -634,17 +631,7 @@ export function Header({
             </div>
           ) : (
              <div className="flex items-center gap-2 sm:gap-4">
-              {onOpenEmailMailbox && (
-                <button
-                  onClick={onOpenEmailMailbox}
-                  title="Open Resend Email Dispatcher & Status"
-                  className="relative p-2.5 rounded-2xl text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-primary dark:hover:text-white transition-all flex items-center gap-1.5"
-                >
-                  <Mail className="h-5 w-5 text-pink-600 dark:text-pink-400" />
-                  <span className="hidden sm:inline text-xs font-bold text-slate-600 dark:text-slate-300">Email Console</span>
-                </button>
-              )}
-
+    
               <div ref={notifRef} className="relative">
                 <button
                   onClick={() => {

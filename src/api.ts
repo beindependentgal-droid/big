@@ -1,4 +1,5 @@
 import { Member, Post, Event, Challenge, Conversation, MentorshipPair, Circle, CircleRequest, Campaign, Donation, MonthlySupporter, ImpactStory } from './data';
+import { AcademyProgressState } from './lib/stateHelpers';
 
 export async function parseApiResponseBody<T>(res: Response): Promise<T> {
   const contentType = res.headers.get('content-type') || '';
@@ -55,6 +56,7 @@ export interface FullBackendState {
   followingIds: string[];
   bookmarkedPostIds: string[];
   notifications: Array<{ id: string; title: string; read: boolean }>;
+  academyProgress?: AcademyProgressState;
   campaigns: Campaign[];
   donations: Donation[];
   monthlySupporters: MonthlySupporter[];
@@ -347,24 +349,6 @@ export const apiService = {
       headers: getHeaders()
     });
     if (!res.ok) throw new Error('Failed to retrieve audit trail');
-    return res.json();
-  },
-
-  // Check Resend email service status & dispatch logs
-  async getEmailStatus(): Promise<{
-    isConfigured: boolean;
-    fromEmail: string;
-    sentEmailLogs: Array<{
-      id: string;
-      to: string;
-      subject: string;
-      status: string;
-      provider: string;
-      timestamp: number;
-    }>;
-  }> {
-    const res = await fetch('/api/email/status');
-    if (!res.ok) throw new Error('Failed to load email service status');
     return res.json();
   },
 

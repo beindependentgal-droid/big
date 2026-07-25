@@ -8,7 +8,6 @@ interface SensitiveActionModalProps {
   onClose: () => void;
   onSuccess: () => void;
   actionName: string;
-  triggerSimulatedEmail?: (subject: string, body: string) => void;
 }
 
 export function SensitiveActionModal({
@@ -16,7 +15,6 @@ export function SensitiveActionModal({
   onClose,
   onSuccess,
   actionName,
-  triggerSimulatedEmail
 }: SensitiveActionModalProps) {
   const [emailEnabled, setEmailEnabled] = useState(false);
   const [pinEnabled, setPinEnabled] = useState(false);
@@ -50,9 +48,6 @@ export function SensitiveActionModal({
         apiService.requestOtp(email, actionName)
           .then(() => {
             setIsSubmitting(false);
-            if (triggerSimulatedEmail) {
-              triggerSimulatedEmail("One-Time Passcode Dispatched", `A secure 6-digit authorization passcode was sent to ${email}`);
-            }
           })
           .catch((err: any) => {
             setErrorMsg(err.message || 'Failed to dispatch security code');
@@ -65,7 +60,7 @@ export function SensitiveActionModal({
         setStep('ready');
       }
     }
-  }, [isOpen, actionName, triggerSimulatedEmail]);
+  }, [isOpen, actionName]);
 
   if (!isOpen) return null;
 
@@ -91,7 +86,7 @@ export function SensitiveActionModal({
         handleCompleteSuccess();
       }
     } catch (err: any) {
-      setErrorMsg(err.message || 'Invalid verification code. Please check your simulated mailbox.');
+      setErrorMsg(err.message || 'Invalid verification code. Please check your email.');
       setIsSubmitting(false);
     }
   };
@@ -190,11 +185,11 @@ export function SensitiveActionModal({
               <form onSubmit={handleVerifyEmail} className="space-y-4">
                 <div className="text-center space-y-1">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed">
-                    A one-time 6-digit code has been dispatched to your registered mailbox.
+                    A one-time 6-digit code has been dispatched to your registered email address.
                   </p>
                   <span className="inline-flex items-center gap-1 text-[10px] font-black text-pink-500 uppercase tracking-widest bg-pink-50 dark:bg-pink-950/30 px-3 py-1 rounded-md">
                     <Mail className="h-3.5 w-3.5" />
-                    Simulated Email Dispatched
+                    One-Time Code Dispatched
                   </span>
                 </div>
 
@@ -212,7 +207,7 @@ export function SensitiveActionModal({
                     placeholder="••••••"
                   />
                   <p className="text-[9px] text-slate-400 text-center italic mt-1">
-                    Tip: View the simulated inbox popup in the top-right corner to get the code!
+                    Tip: Enter the code sent to your registered email address.
                   </p>
                 </div>
 

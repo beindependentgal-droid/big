@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { 
   BookOpen, 
   Search, 
@@ -41,17 +41,20 @@ import {
 } from 'lucide-react';
 import { Course, Lesson, INITIAL_COURSES } from '../data';
 import { motion, AnimatePresence } from 'motion/react';
+import { AcademyProgressState, getDefaultAcademyProgressState, mergeAcademyProgressState } from '../lib/stateHelpers';
 
 interface AcademyViewProps {
   addPoints: (pts: number, badgeCode?: string) => void;
   onJoinCircle: (circleId: string) => void;
   isAuthenticated?: boolean;
   setCurrentView?: (view: string) => void;
+  academyProgress?: AcademyProgressState;
+  setAcademyProgress?: Dispatch<SetStateAction<AcademyProgressState>>;
 }
 
 type AcademyTab = 'explore' | 'my-learning';
 
-export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, setCurrentView }: AcademyViewProps) {
+export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, setCurrentView, academyProgress, setAcademyProgress }: AcademyViewProps) {
   const [courses] = useState<Course[]>(INITIAL_COURSES);
   const [activeTab, setActiveTab] = useState<AcademyTab>('explore');
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,18 +68,21 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
   const [isSubscribed, setIsSubscribed] = useState(false);
 
   // Learning State
-  const [enrolledIds, setEnrolledIds] = useState<string[]>([]);
-  const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([]);
-  const [activeCourseId, setActiveCourseId] = useState<string | null>(null);
-  const [activeLessonId, setActiveLessonId] = useState<string | null>(null);
+  const [localAcademyProgress, setLocalAcademyProgress] = useState<AcademyProgressState>(() => getDefaultAcademyProgressState());
+  const resolvedAcademyProgress = academyProgress ?? localAcademyProgress;
+  const setResolvedAcademyProgress = setAcademyProgress ?? setLocalAcademyProgress;
+  const enrolledIds = resolvedAcademyProgress.enrolledCourseIds;
+  const completedLessonIds = resolvedAcademyProgress.completedLessonIds;
+  const lessonNotes = resolvedAcademyProgress.lessonNotes;
+  const earnedCertificates = resolvedAcademyProgress.earnedCertificateIds;
+  const activeCourseId = resolvedAcademyProgress.activeCourseId;
+  const activeLessonId = resolvedAcademyProgress.activeLessonId;
 
   // Advanced Academy State
-  const [lessonNotes, setLessonNotes] = useState<Record<string, string>>({});
   const [isQuizMode, setIsQuizMode] = useState(false);
   const [quizStep, setQuizStep] = useState(0);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
-  const [earnedCertificates, setEarnedCertificates] = useState<string[]>([]);
   const [showCertificate, setShowCertificate] = useState<string | null>(null);
 
   const categories = [
@@ -110,28 +116,30 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
     activeCourse?.lessons.find(l => l.id === activeLessonId) || activeCourse?.lessons[0] || null
   , [activeCourse, activeLessonId]);
 
+  const updateAcademyProgress = (updates: Partial<AcademyProgressState>) => {
+    setResolvedAcademyProgress(prev => mergeAcademyProgressState(prev, updates));
+  };
+
   const handleEnroll = (courseId: string) => {
     if (!enrolledIds.includes(courseId)) {
-      setEnrolledIds(prev => [...prev, courseId]);
+      updateAcademyProgress({ enrolledCourseIds: [...enrolledIds, courseId] });
       addPoints(100); // Points for taking the first step
     }
-    setActiveCourseId(courseId);
-    setActiveLessonId(courses.find(c => c.id === courseId)?.lessons[0].id || null);
+    updateAcademyProgress({ activeCourseId: courseId, activeLessonId: courses.find(c => c.id === courseId)?.lessons[0].id || null });
   };
 
   const toggleLessonCompletion = (lessonId: string) => {
-    setCompletedLessonIds(prev => {
-      const isCompleting = !prev.includes(lessonId);
-      if (isCompleting) {
-        addPoints(50); // Points per lesson
-        return [...prev, lessonId];
-      }
-      return prev.filter(id => id !== lessonId);
-    });
+    const isCompleting = !completedLessonIds.includes(lessonId);
+    if (isCompleting) {
+      addPoints(50); // Points per lesson
+      updateAcademyProgress({ completedLessonIds: [...completedLessonIds, lessonId] });
+    } else {
+      updateAcademyProgress({ completedLessonIds: completedLessonIds.filter(id => id !== lessonId) });
+    }
   };
 
   const handleLessonNoteChange = (lessonId: string, note: string) => {
-    setLessonNotes(prev => ({ ...prev, [lessonId]: note }));
+    updateAcademyProgress({ lessonNotes: { ...lessonNotes, [lessonId]: note } });
   };
 
   const startQuiz = () => {
@@ -161,7 +169,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
         const passed = score >= quiz.passingScore;
         setQuizResult({ score, passed });
         if (passed && activeCourseId) {
-          setEarnedCertificates(prev => [...new Set([...prev, activeCourseId])]);
+          updateAcademyProgress({ earnedCertificateIds: Array.from(new Set([...earnedCertificates, activeCourseId])) });
           addPoints(1000, 'ACADEMY_GRADUATE');
         }
       }
@@ -237,7 +245,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
                     onClick={() => {
                       setIsQuizMode(false);
                       if (quizResult.passed) {
-                        setActiveCourseId(null);
+                        updateAcademyProgress({ activeCourseId: null, activeLessonId: null });
                         setShowCertificate(activeCourseId);
                       }
                     }}
@@ -267,7 +275,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
         <div className="flex items-center justify-between border-b border-white/10 px-6 py-4 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => setActiveCourseId(null)}
+              onClick={() => updateAcademyProgress({ activeCourseId: null, activeLessonId: null })}
               className="rounded-full bg-white/5 p-2 hover:bg-white/10 transition-colors"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -405,7 +413,7 @@ export function AcademyView({ addPoints, onJoinCircle, isAuthenticated = false, 
                 return (
                   <button
                     key={lesson.id}
-                    onClick={() => setActiveLessonId(lesson.id)}
+                    onClick={() => updateAcademyProgress({ activeLessonId: lesson.id })}
                     className={`w-full flex items-start gap-4 p-5 text-left transition-all hover:bg-white/5 ${isActive ? 'bg-secondary/10 border-l-4 border-secondary' : ''}`}
                   >
                     <div className="relative shrink-0 mt-0.5">

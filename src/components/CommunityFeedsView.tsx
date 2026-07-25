@@ -92,7 +92,6 @@ export function CommunityFeedsView({
   autoHideReported = false,
   reportThreshold = 2
 }: CommunityFeedsViewProps) {
-  console.log('CommunityFeedsView rendering with posts:', posts.length);
   
   // Sub-navigation tabs
   const [activeTab, setActiveTab] = useState<'feed' | 'circles' | 'discussion'>('feed');

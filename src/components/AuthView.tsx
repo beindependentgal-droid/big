@@ -76,7 +76,14 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
           const { token, user } = await apiService.register(name, email, password);
           localStorage.setItem('big_v2_session_token', token);
           localStorage.setItem('big_v2_current_user_email', email);
-          onAuthSuccess(true, user.name, user.email);
+          
+          // Show success message about welcome email
+          setSuccess(`🎉 Welcome to BIG, ${name}! A welcome email has been sent to ${email}. Check your inbox!`);
+          
+          // Small delay to show the message before navigating
+          setTimeout(() => {
+            onAuthSuccess(true, user.name, user.email);
+          }, 1500);
         }
       }
     } catch (err: any) {
@@ -100,7 +107,14 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
         );
         localStorage.setItem('big_v2_session_token', token);
         localStorage.setItem('big_v2_current_user_email', user.email || resolvedEmail);
-        onAuthSuccess(true, user.name, user.email);
+        
+        // Show success message about welcome email and biometric enrollment
+        setSuccess(`🔐 Biometrics enrolled! Welcome email sent to ${user.email || resolvedEmail}.`);
+        
+        // Small delay to show success message before navigating
+        setTimeout(() => {
+          onAuthSuccess(true, user.name, user.email);
+        }, 1500);
       } else {
         if (!biometricCredentialId) {
           throw new Error('Biometric key signature not found on this device');
@@ -135,55 +149,19 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
     try {
       const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(window.location.origin)}`);
       if (!res.ok) {
-        throw new Error("Failed to connect to Google Auth API");
+        const errorBody = await res.json().catch(() => ({}));
+        throw new Error(errorBody.error || "Failed to connect to Google Auth API");
       }
       const data = await res.json();
 
-      if (data.isSimulated) {
-        // Fallback simulator for development/demo mode
-        const emailInput = prompt(
-          "✨ Google Sign-In (Simulator Mode):\n\nEnter your email address to sign in or register with Google:", 
-          "sister@example.com"
-        );
-        if (!emailInput) {
-          setLoading(false);
-          return;
-        }
-        
-        const nameInput = prompt(
-          "Enter your full name for your Google Profile:", 
-          "Sarah Jenkins"
-        );
-        if (!nameInput) {
-          setLoading(false);
-          return;
-        }
+      const authWindow = window.open(
+        data.url,
+        'google_oauth_popup',
+        'width=500,height=600'
+      );
 
-        const registerRes = await fetch('/api/auth/google/simulate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: nameInput, email: emailInput })
-        });
-
-        if (!registerRes.ok) {
-          throw new Error("Simulation Google Auth failed");
-        }
-
-        const simData = await registerRes.json();
-        localStorage.setItem('big_v2_session_token', simData.token);
-        localStorage.setItem('big_v2_current_user_email', simData.user.email);
-        onAuthSuccess(simData.isNewUser ?? false, simData.user.name, simData.user.email);
-      } else {
-        // Real Google OAuth Popup
-        const authWindow = window.open(
-          data.url,
-          'google_oauth_popup',
-          'width=500,height=600'
-        );
-
-        if (!authWindow) {
-          alert('Please allow popups for this site to sign in with Google.');
-        }
+      if (!authWindow) {
+        alert('Please allow popups for this site to sign in with Google.');
       }
     } catch (err: any) {
       setError(err.message || 'Google Sign-In failed');
@@ -203,9 +181,15 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
     setLoading(true);
     try {
       await apiService.requestOtp(email, 'Password Reset');
-      setSuccess('A secure reset code was sent to your email. Enter it below to choose a new password.');
+      setSuccess(`✅ Password reset code sent! Check ${email} for a 6-digit code (expires in 5 minutes). Enter it below to set a new password.`);
     } catch (err: any) {
-      setError(err.message || 'Could not dispatch your reset code.');
+      const errorMsg = err.message || 'Could not dispatch your reset code.';
+      // Provide helpful guidance if email service isn't configured
+      if (errorMsg.includes('not configured') || errorMsg.includes('RESEND')) {
+        setError(`📧 Note: Email service is in test mode. Check the browser console or server logs for your reset code.`);
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
