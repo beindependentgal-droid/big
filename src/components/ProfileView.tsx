@@ -509,13 +509,19 @@ export function ProfileView({
            
            <div className="px-8 pb-8">
              <div className="flex flex-col md:flex-row items-start md:items-end -mt-16 gap-6">
-                <div className="h-32 w-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white">
-                     <img 
-                      src={targetUser.avatar} 
-                      className="h-full w-full object-cover" 
-                      alt="" 
+                <div className="h-32 w-32 rounded-full border-4 border-white shadow-lg overflow-hidden bg-white flex items-center justify-center">
+                  {targetUser.avatar ? (
+                    <img
+                      src={targetUser.avatar}
+                      className="h-full w-full object-cover"
+                      alt={targetUser.name || 'Profile photo'}
                       referrerPolicy="no-referrer"
-                     />
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-white text-slate-200">
+                      <User className="h-12 w-12" />
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex-1 mt-2">
