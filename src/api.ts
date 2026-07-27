@@ -75,6 +75,13 @@ function getHeaders(extraHeaders: Record<string, string> = {}): Record<string, s
   return headers;
 }
 
+function clearStoredSession(): void {
+  localStorage.removeItem('big_v2_session_token');
+  localStorage.removeItem('big_v2_current_user_email');
+  localStorage.removeItem('big_v2_current_user_id');
+  localStorage.setItem('big_v2_is_auth', 'false');
+}
+
 export const apiService = {
   // Load entire unified backend database state
   async getFullState(): Promise<FullBackendState> {
@@ -99,6 +106,9 @@ export const apiService = {
       body: JSON.stringify(partialState)
     });
     if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        clearStoredSession();
+      }
       const errorBody = await parseApiResponseBody<{ error?: string; state?: FullBackendState }>(res).catch(() => ({}) as { error?: string; state?: FullBackendState });
       throw new Error(errorBody.error || 'Failed to sync state to server');
     }
@@ -269,7 +279,12 @@ export const apiService = {
     const res = await fetch('/api/auth/verify-session', {
       headers: getHeaders()
     });
-    if (!res.ok) throw new Error('Session is invalid or expired');
+    if (!res.ok) {
+      if (res.status === 401 || res.status === 403) {
+        clearStoredSession();
+      }
+      throw new Error('Session is invalid or expired');
+    }
     return parseApiResponseBody<{ valid: boolean; user: Member }>(res);
   },
 
