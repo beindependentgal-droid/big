@@ -1106,7 +1106,7 @@ export default function App() {
               localStorage.setItem('big_v2_is_auth', 'true');
 
               if (name && email) {
-                const existingUser = members.find(m => m.email === email);
+                const existingUser = members.find(m => m.email?.toLowerCase() === email.toLowerCase());
                 if (existingUser) {
                   setCurrentUserId(existingUser.id);
                   localStorage.setItem('big_v2_current_user_id', existingUser.id);

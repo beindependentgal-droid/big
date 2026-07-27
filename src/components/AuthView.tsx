@@ -45,9 +45,10 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
 
       if (event.data?.type === 'GOOGLE_AUTH_SUCCESS') {
         const { token, user, isNewUser = false } = event.data;
+        const normalizedEmail = user.email?.trim().toLowerCase() || '';
         localStorage.setItem('big_v2_session_token', token);
-        localStorage.setItem('big_v2_current_user_email', user.email);
-        onAuthSuccess(isNewUser, user.name, user.email);
+        localStorage.setItem('big_v2_current_user_email', normalizedEmail);
+        onAuthSuccess(isNewUser, user.name, normalizedEmail);
       }
     };
     window.addEventListener('message', handleMessage);
@@ -61,28 +62,30 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
     if (!email || !password) return;
     if (!isLogin && !name) return;
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     setLoading(true);
     try {
       if (isLogin) {
-        const { token, user } = await apiService.login(email, password);
+        const { token, user } = await apiService.login(normalizedEmail, password);
         localStorage.setItem('big_v2_session_token', token);
-        localStorage.setItem('big_v2_current_user_email', email);
-        onAuthSuccess(false, user.name, user.email);
+        localStorage.setItem('big_v2_current_user_email', normalizedEmail);
+        onAuthSuccess(false, user.name, user.email || normalizedEmail);
       } else {
         if (enrollBiometrics) {
           setBioMode('register');
           setBioModalOpen(true);
         } else {
-          const { token, user } = await apiService.register(name, email, password);
+          const { token, user } = await apiService.register(name, normalizedEmail, password);
           localStorage.setItem('big_v2_session_token', token);
-          localStorage.setItem('big_v2_current_user_email', email);
+          localStorage.setItem('big_v2_current_user_email', normalizedEmail);
           
           // Show success message about welcome email
-          setSuccess(`🎉 Welcome to BIG, ${name}! A welcome email has been sent to ${email}. Check your inbox!`);
+          setSuccess(`🎉 Welcome to BIG, ${name}! A welcome email has been sent to ${normalizedEmail}. Check your inbox!`);
           
           // Small delay to show the message before navigating
           setTimeout(() => {
-            onAuthSuccess(true, user.name, user.email);
+            onAuthSuccess(true, user.name, user.email || normalizedEmail);
           }, 1500);
         }
       }
