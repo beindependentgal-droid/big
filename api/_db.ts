@@ -26,8 +26,26 @@ import {
   CircleRequest
 } from "../src/data";
 
-const LOCAL_DB_FILE = path.join(process.cwd(), "api", "_db.json");
+const LOCAL_DB_FILE = path.resolve(process.cwd(), "api", "_db.json");
 const TMP_DB_FILE = path.join(os.tmpdir(), "_db.json");
+
+function getWritableDbPath(): string {
+  const localDir = path.dirname(LOCAL_DB_FILE);
+  try {
+    if (!fs.existsSync(localDir)) {
+      fs.mkdirSync(localDir, { recursive: true });
+    }
+    fs.accessSync(localDir, fs.constants.W_OK);
+    return LOCAL_DB_FILE;
+  } catch {
+    try {
+      fs.accessSync(os.tmpdir(), fs.constants.W_OK);
+      return TMP_DB_FILE;
+    } catch {
+      return LOCAL_DB_FILE;
+    }
+  }
+}
 
 function getActiveDbFilePath(): string {
   if (fs.existsSync(LOCAL_DB_FILE)) {
@@ -239,8 +257,8 @@ export const loadDb = (): ApplicationState => {
 };
 
 export const saveDb = (state: ApplicationState): void => {
+  let dbPath = getWritableDbPath();
   try {
-    const dbPath = getActiveDbFilePath();
     const apiDir = path.dirname(dbPath);
     if (!fs.existsSync(apiDir)) {
       fs.mkdirSync(apiDir, { recursive: true });
@@ -261,8 +279,20 @@ export const saveDb = (state: ApplicationState): void => {
     const tempFile = `${dbPath}.tmp`;
     const data = JSON.stringify(state, null, 2);
     
-    fs.writeFileSync(tempFile, data, "utf-8");
-    fs.renameSync(tempFile, dbPath);
+    try {
+      fs.writeFileSync(tempFile, data, "utf-8");
+      fs.renameSync(tempFile, dbPath);
+    } catch (err) {
+      if (dbPath !== TMP_DB_FILE) {
+        console.warn(`Local db write failed, retrying to tmp path: ${TMP_DB_FILE}`);
+        dbPath = TMP_DB_FILE;
+        const fallbackTempFile = `${dbPath}.tmp`;
+        fs.writeFileSync(fallbackTempFile, data, "utf-8");
+        fs.renameSync(fallbackTempFile, dbPath);
+      } else {
+        console.error("Failed to save db.json:", err);
+      }
+    }
   } catch (err) {
     console.error("Failed to save db.json:", err);
   }

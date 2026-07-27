@@ -432,9 +432,9 @@ const getExternalOrigin = (req: any): string => {
 // Google OAuth Sign-In URL Endpoint
 app.get("/api/auth/google/url", (req, res) => {
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID;
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      return res.status(500).json({ error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET." });
+      return res.status(500).json({ error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID, and a matching client secret." });
     }
 
     const origin = (req.query.origin as string) || getExternalOrigin(req);
@@ -468,8 +468,8 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
       return res.status(400).send("Authorization code is missing");
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET;
+    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
       return res.status(500).send("Google client credentials are not configured");
