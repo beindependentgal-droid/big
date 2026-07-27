@@ -137,6 +137,35 @@ function getResendFromEmail(): string {
 
 const app = express();
 
+// Diagnostic endpoint (protected by DIAG_TOKEN) for debugging production failures
+app.get('/api/_diag', (req, res) => {
+  const token = req.query.token as string || '';
+  const expected = getEnvVar('DIAG_TOKEN', 'DEBUG_TOKEN');
+  if (!expected) return res.status(404).send('Not Found');
+  if (!token || token !== expected) return res.status(403).json({ error: 'Forbidden' });
+
+  try {
+    const fsChecks: any = {};
+    const localPath = path.resolve(process.cwd(), 'api', '_db.json');
+    try { fsChecks.localExists = fs.existsSync(localPath); } catch (e) { fsChecks.localExists = false; }
+    try { fsChecks.tmpExists = fs.existsSync(TMP_DB_FILE); } catch (e) { fsChecks.tmpExists = false; }
+    try { fsChecks.dbWritable = typeof isDbWritable === 'function' ? isDbWritable() : null; } catch (e) { fsChecks.dbWritable = false; }
+    const envCheck = {
+      GOOGLE_CLIENT_ID: !!getEnvVar('GOOGLE_CLIENT_ID','VITE_GOOGLE_CLIENT_ID','NEXT_PUBLIC_GOOGLE_CLIENT_ID'),
+      GOOGLE_CLIENT_SECRET: !!getEnvVar('GOOGLE_CLIENT_SECRET','VITE_GOOGLE_CLIENT_SECRET'),
+      RESEND_API_KEY: !!getEnvVar('RESEND_API_KEY')
+    };
+
+    // Attempt to load DB
+    let loaded: any = null;
+    try { loaded = loadDb(); } catch (e) { loaded = { error: String(e) }; }
+
+    res.json({ ok: true, fsChecks, envCheck, loadedSummary: { members: Array.isArray(loaded?.members) ? loaded.members.length : null } });
+  } catch (err: any) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
 // Global Security Headers Middleware with Content Security Policy (CSP)
 app.use((req, res, next) => {
   // Prevent MIME sniffing
