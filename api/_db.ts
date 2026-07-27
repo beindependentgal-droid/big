@@ -29,28 +29,41 @@ import {
 const LOCAL_DB_FILE = path.resolve(process.cwd(), "api", "_db.json");
 const TMP_DB_FILE = path.join(os.tmpdir(), "_db.json");
 
-function getWritableDbPath(): string {
-  const localDir = path.dirname(LOCAL_DB_FILE);
+// Detect an available writable directory on startup to avoid repeated failures
+let DB_WRITEABLE_DIR: string | null = null;
+function detectWritableDir() {
   try {
-    if (!fs.existsSync(localDir)) {
-      fs.mkdirSync(localDir, { recursive: true });
-    }
+    const localDir = path.dirname(LOCAL_DB_FILE);
+    if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
     fs.accessSync(localDir, fs.constants.W_OK);
-    return LOCAL_DB_FILE;
-  } catch {
-    try {
-      fs.accessSync(os.tmpdir(), fs.constants.W_OK);
-      return TMP_DB_FILE;
-    } catch {
-      return LOCAL_DB_FILE;
-    }
+    DB_WRITEABLE_DIR = localDir;
+    return;
+  } catch (e) {
+    // fallthrough to tmp
+  }
+
+  try {
+    fs.accessSync(os.tmpdir(), fs.constants.W_OK);
+    DB_WRITEABLE_DIR = os.tmpdir();
+    return;
+  } catch (e) {
+    DB_WRITEABLE_DIR = null;
   }
 }
 
+detectWritableDir();
+
+function getWritableDbPath(): string {
+  // Prefer local api/_db.json when writable, otherwise fall back to tmp dir
+  if (DB_WRITEABLE_DIR === null) return TMP_DB_FILE;
+  if (DB_WRITEABLE_DIR === path.dirname(LOCAL_DB_FILE)) return LOCAL_DB_FILE;
+  return TMP_DB_FILE;
+}
+
 function getActiveDbFilePath(): string {
-  if (fs.existsSync(LOCAL_DB_FILE)) {
-    return LOCAL_DB_FILE;
-  }
+  // If a local file exists prefer it, otherwise try tmp. If neither is present we still return tmp.
+  if (fs.existsSync(LOCAL_DB_FILE)) return LOCAL_DB_FILE;
+  if (fs.existsSync(TMP_DB_FILE)) return TMP_DB_FILE;
   return TMP_DB_FILE;
 }
 
@@ -198,7 +211,14 @@ export const loadDb = (): ApplicationState => {
           .replace(/member-3\.png/g, 'african_woman_portrait_4_1784708270262.jpg');
       }
 
-      const parsed = JSON.parse(raw);
+      let parsed: any;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (parseErr) {
+        console.error('Failed to parse DB JSON, will fallback to defaults. Error:', parseErr?.stack || parseErr);
+        // move on to fallback behavior below
+        throw parseErr;
+      }
       const defaults = getInitialState();
       
       // Seed missing hashes for initial members on startup so they have safe secure credentials
@@ -228,12 +248,16 @@ export const loadDb = (): ApplicationState => {
       };
 
       if (hashSeeded || needsCleanup || !parsed.campaigns) {
-        fs.writeFileSync(dbPath, JSON.stringify(merged, null, 2), "utf-8");
+        try {
+          fs.writeFileSync(dbPath, JSON.stringify(merged, null, 2), "utf-8");
+        } catch (writeErr) {
+          console.error('Failed to write cleaned DB file:', writeErr?.stack || writeErr);
+        }
       }
       return merged;
     }
   } catch (err) {
-    console.warn("Failed to load db.json, using seed data:", err);
+    console.warn("Failed to load db.json, using seed data:", err?.stack || err);
   }
   
   // Write default state to DB with freshly initialized hashes
@@ -252,11 +276,22 @@ export const loadDb = (): ApplicationState => {
       return m;
     });
   }
-  saveDb(defaultState);
+  // Attempt to persist default state; if persistence is not writable this will be skipped inside saveDb
+  try {
+    saveDb(defaultState);
+  } catch (err) {
+    console.error('saveDb threw while writing default state:', err?.stack || err);
+  }
   return defaultState;
 };
 
-export const saveDb = (state: ApplicationState): void => {
+export const saveDb = (state: ApplicationState): boolean => {
+  // If we detected earlier that no writable dir exists, skip writes to avoid repeated errors
+  if (DB_WRITEABLE_DIR === null) {
+    console.warn('Database write skipped: no writable filesystem available in this environment.');
+    return false;
+  }
+
   let dbPath = getWritableDbPath();
   try {
     const apiDir = path.dirname(dbPath);
@@ -282,21 +317,35 @@ export const saveDb = (state: ApplicationState): void => {
     try {
       fs.writeFileSync(tempFile, data, "utf-8");
       fs.renameSync(tempFile, dbPath);
+      return true;
     } catch (err) {
+      // Attempt fallback to tmp dir if we tried local first
       if (dbPath !== TMP_DB_FILE) {
-        console.warn(`Local db write failed, retrying to tmp path: ${TMP_DB_FILE}`);
+        console.warn(`Local db write failed, retrying to tmp path: ${TMP_DB_FILE}`, err?.stack || err);
         dbPath = TMP_DB_FILE;
         const fallbackTempFile = `${dbPath}.tmp`;
-        fs.writeFileSync(fallbackTempFile, data, "utf-8");
-        fs.renameSync(fallbackTempFile, dbPath);
+        try {
+          fs.writeFileSync(fallbackTempFile, data, "utf-8");
+          fs.renameSync(fallbackTempFile, dbPath);
+          return true;
+        } catch (err2) {
+          console.error('Fallback tmp write also failed:', err2?.stack || err2);
+          return false;
+        }
       } else {
-        console.error("Failed to save db.json:", err);
+        console.error('Failed to save db.json to tmp path:', err?.stack || err);
+        return false;
       }
     }
   } catch (err) {
-    console.error("Failed to save db.json:", err);
+    console.error("Failed to save db.json:", err?.stack || err);
+    return false;
   }
 };
+
+export function isDbWritable(): boolean {
+  return DB_WRITEABLE_DIR !== null;
+}
 
 // Cryptographic Security Helper Functions
 export function hashPassword(password: string, salt: string): string {
