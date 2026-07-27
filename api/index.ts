@@ -40,6 +40,15 @@ async function getAiClient() {
 
 dotenv.config();
 
+// Helper to read first available environment variable from a list and trim it
+function getEnvVar(...names: string[]): string {
+  for (const n of names) {
+    const v = process.env[n];
+    if (typeof v === 'string' && v.trim() !== '') return v.trim();
+  }
+  return '';
+}
+
 const supabaseServiceUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -444,14 +453,14 @@ const getExternalOrigin = (req: any): string => {
 // Google OAuth Sign-In URL Endpoint
 app.get("/api/auth/google/url", (req, res) => {
   try {
-    const clientId =
-      process.env.GOOGLE_CLIENT_ID ||
-      process.env.CLIENT_ID ||
-      process.env.VITE_GOOGLE_CLIENT_ID ||
-      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-      process.env.GOOGLE_OAUTH_CLIENT_ID ||
-      process.env.GOOGLE_OAUTH_CLIENT_ID_1 ||
-      '';
+    const clientId = getEnvVar(
+      'GOOGLE_CLIENT_ID',
+      'CLIENT_ID',
+      'VITE_GOOGLE_CLIENT_ID',
+      'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+      'GOOGLE_OAUTH_CLIENT_ID',
+      'GOOGLE_OAUTH_CLIENT_ID_1'
+    );
     if (!clientId) {
       return res.status(500).json({ error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID, and a matching client secret." });
     }
@@ -487,22 +496,22 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
       return res.status(400).send("Authorization code is missing");
     }
 
-    const clientId =
-      process.env.GOOGLE_CLIENT_ID ||
-      process.env.CLIENT_ID ||
-      process.env.VITE_GOOGLE_CLIENT_ID ||
-      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-      process.env.GOOGLE_OAUTH_CLIENT_ID ||
-      process.env.GOOGLE_OAUTH_CLIENT_ID_1 ||
-      '';
-    const clientSecret =
-      process.env.GOOGLE_CLIENT_SECRET ||
-      process.env.CLIENT_SECRET ||
-      process.env.VITE_GOOGLE_CLIENT_SECRET ||
-      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET ||
-      process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
-      process.env.GOOGLE_OAUTH_CLIENT_SECRET_1 ||
-      '';
+    const clientId = getEnvVar(
+      'GOOGLE_CLIENT_ID',
+      'CLIENT_ID',
+      'VITE_GOOGLE_CLIENT_ID',
+      'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
+      'GOOGLE_OAUTH_CLIENT_ID',
+      'GOOGLE_OAUTH_CLIENT_ID_1'
+    );
+    const clientSecret = getEnvVar(
+      'GOOGLE_CLIENT_SECRET',
+      'CLIENT_SECRET',
+      'VITE_GOOGLE_CLIENT_SECRET',
+      'NEXT_PUBLIC_GOOGLE_CLIENT_SECRET',
+      'GOOGLE_OAUTH_CLIENT_SECRET',
+      'GOOGLE_OAUTH_CLIENT_SECRET_1'
+    );
 
     if (!clientId || !clientSecret) {
       return res.status(500).send("Google client credentials are not configured");
