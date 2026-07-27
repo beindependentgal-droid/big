@@ -49,6 +49,33 @@ function getEnvVar(...names: string[]): string {
   return '';
 }
 
+// PKCE helpers and in-memory PKCE/state store
+type PkceEntry = { verifier: string; expires: number; origin?: string };
+const pkceStore = new Map<string, PkceEntry>();
+
+function base64UrlEncode(buffer: Buffer) {
+  return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function sha256(buffer: Buffer) {
+  return crypto.createHash('sha256').update(buffer).digest();
+}
+
+function generateCodeVerifier() {
+  return base64UrlEncode(crypto.randomBytes(64));
+}
+
+function generateCodeChallenge(verifier: string) {
+  return base64UrlEncode(sha256(Buffer.from(verifier)));
+}
+
+function cleanupPkceStore() {
+  const now = Date.now();
+  for (const [k, v] of pkceStore.entries()) {
+    if (v.expires < now) pkceStore.delete(k);
+  }
+}
+
 const supabaseServiceUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -468,8 +495,15 @@ app.get("/api/auth/google/url", (req, res) => {
     const origin = (req.query.origin as string) || getExternalOrigin(req);
     const redirectUri = `${origin}/api/auth/google/callback`;
 
-    // Encode origin in the state parameter to carry it through the OAuth loop securely
-    const stateObj = { origin };
+    // Create a short-lived PKCE verifier + state id, store verifier server-side
+    cleanupPkceStore();
+    const stateId = crypto.randomBytes(12).toString('hex');
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+    pkceStore.set(stateId, { verifier: codeVerifier, expires: Date.now() + 10 * 60 * 1000, origin });
+
+    // Encode origin + stateId in the state parameter to carry through the OAuth loop
+    const stateObj = { origin, sid: stateId };
     const stateStr = Buffer.from(JSON.stringify(stateObj)).toString('base64');
 
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
@@ -478,7 +512,9 @@ app.get("/api/auth/google/url", (req, res) => {
       response_type: 'code',
       scope: 'openid email profile',
       prompt: 'select_account',
-      state: stateStr
+      state: stateStr,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256'
     }).toString();
 
     res.json({ url: authUrl });
@@ -517,13 +553,23 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
       return res.status(500).send("Google client credentials are not configured");
     }
 
-    // Extract original origin from the state parameter if present to match the redirect_uri exactly
+    // Extract original origin and state id from the state parameter if present
     let origin = getExternalOrigin(req);
+    let codeVerifier: string | undefined = undefined;
     if (state) {
       try {
         const decodedState = JSON.parse(Buffer.from(state as string, 'base64').toString('utf-8'));
         if (decodedState && decodedState.origin) {
           origin = decodedState.origin;
+        }
+        if (decodedState && decodedState.sid) {
+          const sid = decodedState.sid as string;
+          const entry = pkceStore.get(sid);
+          if (entry) {
+            codeVerifier = entry.verifier;
+            // single-use: delete stored verifier
+            pkceStore.delete(sid);
+          }
         }
       } catch (e) {
         console.error("Failed to parse Google OAuth state:", e);
@@ -532,16 +578,21 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
     const redirectUri = `${origin}/api/auth/google/callback`;
 
     // Exchange code for Google Access Token
+    const tokenBody: any = {
+      code: code as string,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code'
+    };
+    if (codeVerifier) {
+      tokenBody.code_verifier = codeVerifier;
+    }
+
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        code: code as string,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: redirectUri,
-        grant_type: 'authorization_code'
-      })
+      body: new URLSearchParams(tokenBody)
     });
 
     if (!tokenRes.ok) {
