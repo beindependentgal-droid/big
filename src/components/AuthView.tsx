@@ -21,6 +21,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [passwordResetRequested, setPasswordResetRequested] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
@@ -184,6 +185,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
     setLoading(true);
     try {
       await apiService.requestOtp(email, 'Password Reset');
+      setPasswordResetRequested(true);
       setSuccess(`✅ Password reset code sent! Check ${email} for a 6-digit code (expires in 5 minutes). Enter it below to set a new password.`);
     } catch (err: any) {
       const errorMsg = err.message || 'Could not dispatch your reset code.';
@@ -213,6 +215,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
       const result = await apiService.resetPassword(email, otpCode, newPassword);
       setSuccess(result.message || 'Password reset successful.');
       setIsResettingPassword(false);
+      setPasswordResetRequested(false);
       setOtpCode('');
       setNewPassword('');
       setPassword('');
@@ -239,7 +242,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+        <form onSubmit={isResettingPassword ? (passwordResetRequested ? handlePasswordResetSubmit : (e) => { e.preventDefault(); handlePasswordResetRequest(); }) : handleSubmit} className="p-8 space-y-6">
           {error && (
             <div className="flex items-start gap-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 px-3.5 py-3 text-rose-800 dark:text-rose-300 text-xs font-semibold leading-relaxed animate-pulse">
               <AlertCircle className="h-4.5 w-4.5 text-rose-500 shrink-0 mt-0.5" />
@@ -254,9 +257,16 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
           )}
 
           {isResettingPassword ? (
-            <form onSubmit={handlePasswordResetSubmit} className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-3">
+                <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100">Reset your password</h3>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  Enter your email and we’ll send you a link to reset your password.
+                </p>
+              </div>
+
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Email Address</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Email address</label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -264,72 +274,77 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-primary focus:border-secondary focus:outline-none"
-                    placeholder="sister@example.com"
+                    className="w-full rounded-2xl border border-slate-200 bg-white py-4 pl-12 pr-4 text-base text-primary focus:border-secondary focus:outline-none"
+                    placeholder="Email address"
                     disabled={loading}
                   />
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Reset Code</label>
-                <input
-                  type="text"
-                  required
-                  value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-primary focus:border-secondary focus:outline-none"
-                  placeholder="123456"
-                  disabled={loading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">New Password</label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="password"
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-primary focus:border-secondary focus:outline-none"
-                    placeholder="Choose a new password"
-                    disabled={loading}
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-black uppercase tracking-[0.15em] text-white transition-all hover:bg-primary/95 disabled:opacity-50"
-                >
-                  {loading ? 'Updating...' : 'Reset Password'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsResettingPassword(false);
-                    setOtpCode('');
-                    setNewPassword('');
-                  }}
-                  className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-600"
-                >
-                  Back
-                </button>
               </div>
 
               <button
-                type="button"
-                onClick={handlePasswordResetRequest}
+                type="submit"
                 disabled={loading}
+                className="w-full rounded-2xl bg-pink-600 px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-pink-500 disabled:opacity-50"
+              >
+                {passwordResetRequested ? (loading ? 'Sending...' : 'Send link to email') : (loading ? 'Sending...' : 'Send link to email')}
+              </button>
+
+              {passwordResetRequested && (
+                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Reset Code</label>
+                    <input
+                      type="text"
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      className="w-full rounded-xl border border-slate-200 bg-white py-3 px-4 text-sm text-primary focus:border-secondary focus:outline-none"
+                      placeholder="123456"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">New Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="password"
+                        required
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-sm text-primary focus:border-secondary focus:outline-none"
+                        placeholder="Choose a new password"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full rounded-2xl bg-primary px-6 py-4 text-sm font-black uppercase tracking-[0.2em] text-white transition-all hover:bg-primary/95 disabled:opacity-50"
+                  >
+                    {loading ? 'Updating...' : 'Reset Password'}
+                  </button>
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsResettingPassword(false);
+                  setPasswordResetRequested(false);
+                  setError(null);
+                  setSuccess(null);
+                  setOtpCode('');
+                  setNewPassword('');
+                }}
                 className="w-full text-sm font-semibold text-secondary underline"
               >
-                Send me a new reset code
+                Back to Log In
               </button>
-            </form>
+            </div>
           ) : (
             <>
           {!isLogin && (
@@ -469,20 +484,30 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
 
         <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-t border-slate-100 dark:border-slate-800 text-center">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            {isLogin ? "Don't have an account?" : "Already a member?"}
+            {isResettingPassword ? 'Remembered your password?' : isLogin ? "Don't have an account?" : 'Already a member?'}
             <button
               type="button"
               onClick={() => {
-                setIsLogin(!isLogin);
-                setIsResettingPassword(false);
-                setError(null);
-                setSuccess(null);
-                setOtpCode('');
-                setNewPassword('');
+                if (isResettingPassword) {
+                  setIsResettingPassword(false);
+                  setError(null);
+                  setSuccess(null);
+                  setOtpCode('');
+                  setNewPassword('');
+                  setPassword('');
+                } else {
+                  setIsLogin(!isLogin);
+                  setIsResettingPassword(false);
+                  setError(null);
+                  setSuccess(null);
+                  setOtpCode('');
+                  setNewPassword('');
+                  setPassword('');
+                }
               }}
               className="ml-2 font-bold text-secondary hover:underline uppercase tracking-wide text-xs"
             >
-              {isLogin ? 'Sign Up' : 'Log In'}
+              {isResettingPassword ? 'Back to Log In' : isLogin ? 'Sign Up' : 'Log In'}
             </button>
           </p>
         </div>
