@@ -44,11 +44,15 @@ const supabaseServiceUrl =
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
   process.env.VITE_SUPABASE_URL ||
+  process.env.SUPABASE_URL_1 ||
   '';
 const supabaseServiceKey =
   process.env.SUPABASE_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
   process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY ||
+  process.env.SUPABASE_SERVICE_KEY_1 ||
   '';
 
 const isBackendSupabaseConfigured = Boolean(
@@ -73,8 +77,16 @@ function getBackendSupabase(): SupabaseClient | null {
 // Lazy initialization of Resend client for real email dispatches
 let resendClient: Resend | null = null;
 function getResendClient(): Resend | null {
-  if (!resendClient && process.env.RESEND_API_KEY) {
-    resendClient = new Resend(process.env.RESEND_API_KEY);
+  const resendKey =
+    process.env.RESEND_API_KEY ||
+    process.env.VITE_RESEND_API_KEY ||
+    process.env.NEXT_PUBLIC_RESEND_API_KEY ||
+    process.env.RESEND_KEY ||
+    process.env.RESEND_API_KEY_1 ||
+    '';
+
+  if (!resendClient && resendKey) {
+    resendClient = new Resend(resendKey);
   }
   return resendClient;
 }
@@ -432,7 +444,14 @@ const getExternalOrigin = (req: any): string => {
 // Google OAuth Sign-In URL Endpoint
 app.get("/api/auth/google/url", (req, res) => {
   try {
-    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const clientId =
+      process.env.GOOGLE_CLIENT_ID ||
+      process.env.CLIENT_ID ||
+      process.env.VITE_GOOGLE_CLIENT_ID ||
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      process.env.GOOGLE_OAUTH_CLIENT_ID ||
+      process.env.GOOGLE_OAUTH_CLIENT_ID_1 ||
+      '';
     if (!clientId) {
       return res.status(500).json({ error: "Google OAuth is not configured. Set GOOGLE_CLIENT_ID or VITE_GOOGLE_CLIENT_ID, and a matching client secret." });
     }
@@ -468,8 +487,22 @@ app.get(["/api/auth/google/callback", "/api/auth/google/callback/"], async (req,
       return res.status(400).send("Authorization code is missing");
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET || process.env.VITE_GOOGLE_CLIENT_SECRET || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
+    const clientId =
+      process.env.GOOGLE_CLIENT_ID ||
+      process.env.CLIENT_ID ||
+      process.env.VITE_GOOGLE_CLIENT_ID ||
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      process.env.GOOGLE_OAUTH_CLIENT_ID ||
+      process.env.GOOGLE_OAUTH_CLIENT_ID_1 ||
+      '';
+    const clientSecret =
+      process.env.GOOGLE_CLIENT_SECRET ||
+      process.env.CLIENT_SECRET ||
+      process.env.VITE_GOOGLE_CLIENT_SECRET ||
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET ||
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET_1 ||
+      '';
 
     if (!clientId || !clientSecret) {
       return res.status(500).send("Google client credentials are not configured");
