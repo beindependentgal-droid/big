@@ -691,7 +691,7 @@ export default function App() {
     }
   }, [isAuthenticated, profileCompletion]);
 
-  // Load data from Express backend on mount (and fallback to Supabase/localStorage)
+  // Load data from serverless API on mount and fallback to Supabase/localStorage
   useEffect(() => {
     async function loadAllData() {
       let backendLoaded = false;
@@ -716,7 +716,7 @@ export default function App() {
           if (data.notifications && data.notifications.length > 0) setNotifications(data.notifications);
           
           setNotifications(prev => [
-            { id: `not-backend-${Date.now()}`, title: '⚡ Connected and synced with your live Express backend!', read: false },
+            { id: `not-backend-${Date.now()}`, title: '⚡ Connected and synced with your live serverless backend!', read: false },
             ...prev
           ]);
           backendLoaded = true;
@@ -808,7 +808,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('big_v2_conversations', JSON.stringify(conversations));
     if (conversations.length > 0) {
-      apiService.syncState({ conversations }).catch(err => console.warn('Failed to sync conversations to backend:', err));
+      apiService.syncState({ conversations }).catch(err => console.warn('Failed to sync conversations to serverless backend:', err));
     }
     if (isSupabaseConfigured() && conversations.length > 0) {
       supabaseService.seedConversations(conversations);
@@ -818,7 +818,7 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('big_v2_mentorship_pairs', JSON.stringify(mentorshipPairs));
     if (mentorshipPairs.length > 0) {
-      apiService.syncState({ mentorshipPairs }).catch(err => console.warn('Failed to sync mentorshipPairs to backend:', err));
+      apiService.syncState({ mentorshipPairs }).catch(err => console.warn('Failed to sync mentorshipPairs to serverless backend:', err));
     }
     if (isSupabaseConfigured() && mentorshipPairs.length > 0) {
       supabaseService.seedMentorshipPairs(mentorshipPairs);

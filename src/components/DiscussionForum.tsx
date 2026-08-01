@@ -354,7 +354,7 @@ export function DiscussionForum({
     loadForumData();
   }, []);
 
-  // Persist threads to localStorage and Express backend
+  // Persist threads to localStorage and serverless backend
   useEffect(() => {
     localStorage.setItem('big_v2_forum_threads', JSON.stringify(threads));
     fetch('/api/forum-threads', {
