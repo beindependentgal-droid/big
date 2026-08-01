@@ -62,6 +62,15 @@ export function CirclesView({
   const [newCircleName, setNewCircleName] = useState('');
   const [newCircleDesc, setNewCircleDesc] = useState('');
   const [newCircleCategory, setNewCircleCategory] = useState<'learn' | 'connect' | 'earn' | 'thrive' | 'custom'>('connect');
+  const [privateHubRequestSent, setPrivateHubRequestSent] = useState(false);
+
+  const handleRequestPrivateHub = () => {
+    setPrivateHubRequestSent(true);
+    triggerNotice(
+      'Private Hubs are not enabled in this preview build. Create a public Circle for now or ask a Super Admin to enable it.',
+      'warning',
+    );
+  };
 
   // Eligibility Logic
   const userOwnedCircles = circles.filter(c => c.createdBy === currentUser.id);
@@ -623,14 +632,19 @@ export function CirclesView({
                       <p className="text-[10px] font-black uppercase tracking-widest text-secondary pt-2">Public Circle</p>
                       <p className="text-[10px] font-medium text-slate-600 leading-relaxed">Visible to all BIG members in the directory.</p>
                     </div>
-                    <div className="p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 space-y-1 opacity-60 cursor-not-allowed">
+                    <button
+                      type="button"
+                      onClick={handleRequestPrivateHub}
+                      className="w-full p-4 rounded-2xl border-2 border-slate-100 bg-slate-50 space-y-1 text-left transition-all hover:border-slate-200"
+                    >
                       <div className="flex items-center justify-between">
                          <Lock className="h-5 w-5 text-slate-400" />
                          <div className="h-5 w-5 rounded-full border-2 border-slate-200 bg-white" />
                       </div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pt-2">Private Hub <span className="lowercase normal-case font-medium ml-1 text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded text-[8px]">(Coming Soon)</span></p>
-                      <p className="text-[10px] font-medium text-slate-500 leading-relaxed">Invitation only. Perfect for confidential masterminds.</p>
-                    </div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 pt-2">Private Hub <span className="lowercase normal-case font-medium ml-1 text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded text-[8px]">(Not available yet)</span></p>
+                      <p className="text-[10px] font-medium text-slate-500 leading-relaxed">Invitation-only hubs are planned for a future release.</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-amber-600">Tap to learn more</p>
+                    </button>
                   </div>
                 </form>
               </div>

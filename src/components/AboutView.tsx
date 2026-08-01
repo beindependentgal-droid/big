@@ -44,7 +44,7 @@ const bigLooks = [
   },
 ]
 
-export function AboutView({ setCurrentView }: { setCurrentView: (view: string) => void }) {
+export function AboutView({ setCurrentView }: { setCurrentView: (view: string, options?: { authMode?: 'login' | 'register' }) => void }) {
   return (
     <div className="bg-white">
       <section className="relative min-h-[78vh] overflow-hidden sm:min-h-[86vh]">
@@ -68,7 +68,7 @@ export function AboutView({ setCurrentView }: { setCurrentView: (view: string) =
           <div className="mt-10 flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <Button
               className="w-full rounded-full bg-primary px-8 py-4 text-base font-semibold text-white shadow-[0_20px_50px_-18px_rgba(91,33,182,0.35)] transition-all duration-300 hover:-translate-y-1 sm:w-auto"
-              onClick={() => setCurrentView('auth')}
+              onClick={() => setCurrentView('auth', { authMode: 'register' })}
             >
               Become a BIG Member
             </Button>

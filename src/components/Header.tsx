@@ -37,7 +37,7 @@ import { PUBLIC_LINKS, PRIVATE_LINKS, NAVIGATION_CATEGORIES } from '../lib/navig
 
 interface HeaderProps {
   currentView: string;
-  setCurrentView: (view: string) => void;
+  setCurrentView: (view: string, options?: { authMode?: 'login' | 'register' }) => void;
   unreadCount: number;
   notifications: Array<{ id: string; title: string; read: boolean }>;
   markNotificationsRead: () => void;
@@ -622,10 +622,10 @@ export function Header({
         <div className="flex items-center gap-4 shrink-0">
           {!isAuthenticated ? (
             <div className="flex items-center gap-3">
-              <button onClick={() => setCurrentView('auth')} className="rounded-full border border-slate-200 bg-white dark:bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-700 dark:text-white hover:bg-slate-50 transition-colors">
+              <button onClick={() => setCurrentView('auth', { authMode: 'login' })} className="rounded-full border border-slate-200 bg-white dark:bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-700 dark:text-white hover:bg-slate-50 transition-colors">
                 Log In
               </button>
-              <button onClick={() => setCurrentView('auth')} className="rounded-full bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-primary/95 transition-colors shadow-sm">
+              <button onClick={() => setCurrentView('auth', { authMode: 'register' })} className="rounded-full bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-wider text-white hover:bg-primary/95 transition-colors shadow-sm">
                 Join BIG
               </button>
             </div>

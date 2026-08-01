@@ -37,6 +37,12 @@ export function BiometricModal({ isOpen, onClose, mode, email, name = '', onSucc
     setStatus('scanning');
     setErrorMsg('');
 
+    if (mode === 'register' && !email) {
+      setStatus('error');
+      setErrorMsg('Please provide your email address before enrolling biometrics.');
+      return;
+    }
+
     // Try real WebAuthn API
     if (window.PublicKeyCredential) {
       try {

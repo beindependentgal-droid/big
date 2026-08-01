@@ -25,7 +25,7 @@ export function Footer({ setCurrentView, isAuthenticated = false }: FooterProps)
               Become part of a community of ambitious women building independent, purpose-driven futures together.
             </p>
             <button
-              onClick={() => setCurrentView('auth')}
+              onClick={() => setCurrentView('auth', { authMode: 'register' })}
               className="mt-6 rounded-full bg-primary px-8 py-3.5 text-xs font-black uppercase tracking-widest text-white hover:bg-secondary transition-colors shadow-lg cursor-pointer"
             >
               Join the Sisterhood

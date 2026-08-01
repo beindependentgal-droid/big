@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { calculatePointsAndBadges, updateMembers, getDefaultAcademyProgressState, mergeAcademyProgressState } from './lib/stateHelpers';
+import { calculatePointsAndBadges, updateMembers, getDefaultAcademyProgressState, mergeAcademyProgressState, getNextFollowingIds, getNextFollowerIds } from './lib/stateHelpers';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -126,6 +126,7 @@ export default function App() {
     localStorage.setItem('big_v2_theme_pref', themePref);
   }, [isDark, themePref]);
 
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [sessionExpiredAlert, setSessionExpiredAlert] = useState<boolean>(false);
 
   // Session Inactivity Timeout Watcher
@@ -190,7 +191,11 @@ export default function App() {
     });
   };
 
-  const handleNavigation = (view: string) => {
+  const handleNavigation = (view: string, options?: { authMode?: 'login' | 'register' }) => {
+    if (!isAuthenticated && view === 'auth' && options?.authMode) {
+      setAuthMode(options.authMode);
+    }
+
     if (view === 'auth' && isAuthenticated) {
       setIsAuthenticated(false);
       setCurrentView('home');
@@ -201,8 +206,15 @@ export default function App() {
       setPreviousView(currentView);
     }
 
+    if (view === 'admin' && !currentUser.isSuperAdmin) {
+      console.warn('Admin access denied for non-super-admin user');
+      setCurrentView('feeds');
+      return;
+    }
+
     const publicViews = ['home', 'auth', 'about', 'contact', 'big-club', 'programs', 'big-fund', 'academy', 'circles', 'directory'];
     if (!isAuthenticated && !publicViews.includes(view)) {
+      setAuthMode('login');
       setCurrentView('auth');
     } else if (isAuthenticated && view === 'auth') {
       setCurrentView('feeds');
@@ -504,16 +516,17 @@ export default function App() {
 
   const toggleFollow = (memberId: string) => {
     let nextFollowingIds: string[] = [];
+    let isFollowing = false;
     
     setFollowingIds(prev => {
-      const isFollowing = prev.includes(memberId);
-      const next = isFollowing ? prev.filter(id => id !== memberId) : [...prev, memberId];
+      isFollowing = prev.includes(memberId);
+      const next = getNextFollowingIds(prev, memberId);
       localStorage.setItem('big_v2_following_ids', JSON.stringify(next));
       if (isSupabaseConfigured()) {
         void supabaseService.saveMember({
           ...currentUser,
           followingIds: next,
-          id: currentUserId
+          id: currentUserId,
         } as Member);
       }
       
@@ -525,14 +538,14 @@ export default function App() {
           id: `follow-${Date.now()}`,
           title: '➕ Sister Followed!',
           desc: 'You are now following this sister\'s journey, updates, and milestones. (+10 Pts)',
-          type: 'points'
+          type: 'points',
         });
       } else {
         setToast({
           id: `unfollow-${Date.now()}`,
           title: '➖ Unfollowed Sister',
           desc: 'You unfollowed this sister. You can follow her again at any time.',
-          type: 'points'
+          type: 'points',
         });
       }
       return next;
@@ -558,7 +571,7 @@ export default function App() {
           points: userPoints,
           badges: userBadges,
           followingIds: [],
-          circleIds: ['learn', 'earn']
+          circleIds: ['learn', 'earn'],
         };
         baseList = [...prev, defaultYou];
       }
@@ -567,18 +580,13 @@ export default function App() {
         if (m.id === currentUserId) {
           return {
             ...m,
-            followingIds: nextFollowingIds
+            followingIds: nextFollowingIds,
           };
         }
         if (m.id === memberId) {
-          const currentFollowers = m.followerIds || [];
-          const isFollower = currentFollowers.includes(currentUserId);
-          const nextFollowers = isFollower 
-            ? currentFollowers.filter(id => id !== currentUserId)
-            : [...currentFollowers, currentUserId];
           return {
             ...m,
-            followerIds: nextFollowers
+            followerIds: getNextFollowerIds(m.followerIds, currentUserId),
           };
         }
         return m;
@@ -656,8 +664,12 @@ export default function App() {
       business_stage: 'Early Stage',
       mentoring_capacity: 'Seeking Match',
       circleIds: ['learn', 'earn'],
+      followingIds: followingIds,
+      followerIds: [],
       isSuperAdmin: false
     }),
+    followingIds: foundYou?.followingIds ?? followingIds,
+    followerIds: foundYou?.followerIds ?? [],
     isSuperAdmin: (foundYou?.email === 'athkhassan@gmail.com') || (foundYou?.email === 'beindependentgal@gmail.com') || (currentUserId === 'you'),
     points: userPoints,
     badges: userBadges
@@ -1101,6 +1113,7 @@ export default function App() {
         <ErrorBoundary>
         {currentView === 'auth' && (
           <AuthView
+            defaultMode={authMode}
             onAuthSuccess={(isNewUser, name, email) => {
               setIsAuthenticated(true);
               localStorage.setItem('big_v2_is_auth', 'true');
@@ -1126,6 +1139,10 @@ export default function App() {
                     setUserBadges([]);
                     localStorage.setItem('big_v2_user_badges', JSON.stringify([]));
                   }
+
+                  const nextFollowingIds = existingUser.followingIds ?? [];
+                  setFollowingIds(nextFollowingIds);
+                  localStorage.setItem('big_v2_following_ids', JSON.stringify(nextFollowingIds));
                 } else {
                   const newUserId = `user-${Date.now()}`;
                   setCurrentUserId(newUserId);
@@ -1134,6 +1151,7 @@ export default function App() {
                   localStorage.setItem('big_v2_connections', JSON.stringify([]));
                   localStorage.setItem('big_v2_circle_requests', JSON.stringify([]));
                   localStorage.setItem('big_v2_notifications', JSON.stringify([]));
+                  localStorage.setItem('big_v2_following_ids', JSON.stringify([]));
 
                   setFollowingIds([]);
                   setBookmarkedPostIds([]);
@@ -1156,7 +1174,11 @@ export default function App() {
                     bio: '',
                     business_stage: '',
                     mentoring_capacity: '',
-                    circleIds: []
+                    circleIds: [],
+                    followingIds: [],
+                    followerIds: [],
+                    points: 0,
+                    badges: []
                   };
 
                   const updatedMembers = [...members, newProfile as Member];
@@ -1646,7 +1668,7 @@ export default function App() {
             <button
               onClick={() => {
                 setSessionExpiredAlert(false);
-                setCurrentView('auth');
+                setCurrentView('auth', { authMode: 'login' });
               }}
               className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 dark:hover:bg-slate-50 transition animate-pulse"
             >

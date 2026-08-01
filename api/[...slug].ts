@@ -78,6 +78,49 @@ function createSessionToken(userId: string, email: string) {
   return `${payloadBase64}.${signature}`;
 }
 
+function urlSafeBase64Encode(value: string) {
+  return Buffer.from(value)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function urlSafeBase64Decode(value: string) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "===".slice((base64.length + 3) % 4);
+  return Buffer.from(padded, "base64").toString("utf-8");
+}
+
+function getGoogleOAuthConfig(req: any) {
+  const clientId =
+    process.env.GOOGLE_CLIENT_ID ||
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+    process.env.VITE_GOOGLE_CLIENT_ID ||
+    "";
+  const clientSecret =
+    process.env.GOOGLE_CLIENT_SECRET ||
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET ||
+    "";
+  let redirectUri =
+    process.env.GOOGLE_REDIRECT_URI ||
+    process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
+    process.env.VITE_GOOGLE_REDIRECT_URI ||
+    "";
+
+  if (!redirectUri) {
+    const proto = String(
+      req.headers["x-forwarded-proto"] ||
+        req.headers["X-Forwarded-Proto"] ||
+        "https",
+    );
+    const host = String(req.headers.host || req.headers.HOST || "");
+    redirectUri = `${proto}://${host}/api/auth/google/callback`;
+  }
+
+  return { clientId, clientSecret, redirectUri };
+}
+
 function verifySessionToken(token: string) {
   try {
     const [payloadBase64, signature] = token.split(".");
@@ -952,9 +995,214 @@ async function handleAuthRoute(req: any, res: any, route: string[]) {
   }
 
   if (route[1] === "google" && route[2] === "url") {
-    return setJsonResponse(res, 501, {
-      error: "Google auth is not configured for this deployment.",
+    const origin = Array.isArray(req.query.origin)
+      ? req.query.origin[0]
+      : req.query.origin || "";
+    const { clientId, redirectUri } = getGoogleOAuthConfig(req);
+
+    if (!clientId || !redirectUri) {
+      return setJsonResponse(res, 500, {
+        error:
+          "Google auth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_REDIRECT_URI.",
+      });
+    }
+
+    const statePayload = JSON.stringify({
+      origin: String(origin),
+      issuedAt: Date.now(),
     });
+    const state = encodeURIComponent(urlSafeBase64Encode(statePayload));
+
+    const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    authUrl.searchParams.set("client_id", clientId);
+    authUrl.searchParams.set("redirect_uri", redirectUri);
+    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("scope", "openid email profile");
+    authUrl.searchParams.set("access_type", "offline");
+    authUrl.searchParams.set("prompt", "select_account");
+    authUrl.searchParams.set("state", state);
+
+    return setJsonResponse(res, 200, { url: authUrl.toString() });
+  }
+
+  if (route[1] === "google" && route[2] === "callback") {
+    const code = Array.isArray(req.query.code)
+      ? req.query.code[0]
+      : req.query.code;
+    const state = Array.isArray(req.query.state)
+      ? req.query.state[0]
+      : req.query.state;
+    const error = Array.isArray(req.query.error)
+      ? req.query.error[0]
+      : req.query.error;
+
+    const decodedState = state
+      ? JSON.parse(urlSafeBase64Decode(decodeURIComponent(state)))
+      : { origin: "" };
+    const callbackOrigin = decodedState.origin || "*";
+
+    if (error) {
+      const escaped = String(error).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      return setJsonResponse(res, 400, {
+        error: `Google auth error: ${escaped}`,
+      });
+    }
+
+    if (!code) {
+      return setJsonResponse(res, 400, {
+        error: "Google auth code is missing.",
+      });
+    }
+
+    const { clientId, clientSecret, redirectUri } = getGoogleOAuthConfig(req);
+    if (!clientId || !clientSecret || !redirectUri) {
+      return setJsonResponse(res, 500, {
+        error:
+          "Google auth is not configured. Please set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and GOOGLE_REDIRECT_URI.",
+      });
+    }
+
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+
+    const tokenData = await tokenResponse.json();
+    if (!tokenResponse.ok || !tokenData.access_token) {
+      const errorMessage =
+        tokenData.error_description ||
+        tokenData.error ||
+        "Failed to exchange Google auth code.";
+      return setJsonResponse(res, 500, { error: errorMessage });
+    }
+
+    const userInfoResponse = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${String(tokenData.access_token)}`,
+        },
+      },
+    );
+
+    const profile = await userInfoResponse.json();
+    if (!userInfoResponse.ok || !profile.email) {
+      return setJsonResponse(res, 500, {
+        error: "Failed to retrieve Google profile information.",
+      });
+    }
+
+    const normalizedEmail = String(profile.email).trim().toLowerCase();
+    const googleUserId = String(
+      profile.sub || profile.id || `google-${Date.now()}`,
+    );
+    let authUser: any = null;
+
+    if (supabase) {
+      const { data: existingUser, error: existingError } = await supabase
+        .from("big_members")
+        .select("*")
+        .eq("email", normalizedEmail)
+        .maybeSingle();
+
+      if (!existingError && existingUser) {
+        authUser = sanitizeUserOutput(existingUser);
+        const updatedRecord = {
+          name: profile.name || authUser.name,
+          avatar: profile.picture || authUser.avatar,
+        };
+        await supabase
+          .from("big_members")
+          .update(updatedRecord)
+          .eq("id", authUser.id);
+        authUser = { ...authUser, ...updatedRecord };
+      } else {
+        const newUser = buildUserRecord({
+          id: `user-google-${googleUserId}`,
+          name: profile.name || "BIG Member",
+          email: normalizedEmail,
+          avatar:
+            profile.picture ||
+            "/images/african_woman_portrait_1_1784708232425.jpg",
+          title: "Learner",
+          city: "",
+          rank: "Learner",
+          points: 0,
+          badges: [],
+          followingIds: [],
+          followerIds: [],
+          circleIds: [],
+          isSuperAdmin: false,
+          isModerator: false,
+          joinedAt: new Date().toISOString(),
+        });
+        await supabase.from("big_members").insert([newUser]);
+        authUser = sanitizeUserOutput(newUser);
+      }
+    }
+
+    if (!authUser) {
+      authUser = {
+        id: `user-google-${googleUserId}`,
+        name: profile.name || "BIG Member",
+        email: normalizedEmail,
+        avatar:
+          profile.picture ||
+          "/images/african_woman_portrait_1_1784708232425.jpg",
+        title: "Learner",
+        city: "",
+        rank: "Learner",
+        skills: [],
+        interests: [],
+        bio: "",
+        points: 0,
+        badges: [],
+        business_stage: null,
+        mentoring_capacity: null,
+        followingIds: [],
+        followerIds: [],
+        circleIds: [],
+        isSuperAdmin: false,
+        isModerator: false,
+        joinedAt: new Date().toISOString(),
+      };
+    }
+
+    const token = createSessionToken(
+      authUser.id,
+      authUser.email || authUser.name,
+    );
+    const sanitized = {
+      ...authUser,
+      email: authUser.email,
+      avatar: authUser.avatar,
+      name: authUser.name,
+    };
+
+    const escapedOrigin = callbackOrigin === "*" ? "*" : String(callbackOrigin);
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Signing in with Google</title></head><body><script>
+      try {
+        const payload = ${JSON.stringify({ type: "GOOGLE_AUTH_SUCCESS", token, user: sanitized })};
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, ${JSON.stringify(escapedOrigin)});
+        }
+      } catch (err) {
+        console.error(err);
+      }
+      window.close();
+    </script><p>Signing you in…</p></body></html>`;
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.statusCode = 200;
+    res.end(html);
+    return;
   }
 
   return setJsonResponse(res, 404, { error: "Auth route not found" });

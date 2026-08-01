@@ -5,15 +5,20 @@ import { BiometricModal } from './BiometricModal';
 import { apiService } from '../api';
 
 interface AuthViewProps {
+  defaultMode?: 'login' | 'register';
   onAuthSuccess: (isNewUser: boolean, name?: string, email?: string) => void;
 }
 
-export function AuthView({ onAuthSuccess }: AuthViewProps) {
-  const [isLogin, setIsLogin] = useState(true);
+export function AuthView({ defaultMode = 'login', onAuthSuccess }: AuthViewProps) {
+  const [isLogin, setIsLogin] = useState(defaultMode === 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [enrollBiometrics, setEnrollBiometrics] = useState(false);
+
+  useEffect(() => {
+    setIsLogin(defaultMode === 'login');
+  }, [defaultMode]);
   const [hasBiometrics, setHasBiometrics] = useState(false);
   
   // Security API state
@@ -40,7 +45,12 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
       const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+      if (
+        origin !== window.location.origin &&
+        !origin.endsWith('.run.app') &&
+        !origin.includes('localhost') &&
+        !origin.includes('127.0.0.1')
+      ) {
         return;
       }
 
@@ -104,29 +114,36 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
       if (bioMode === 'register') {
         const secureRandomPass = `BioPass_${Math.random().toString(36).slice(2, 10)}!`;
         const { token, user } = await apiService.register(
-          name || resolvedName || 'BIG Member', 
-          email || resolvedEmail, 
+          name || resolvedName || 'BIG Member',
+          email || resolvedEmail,
           password || secureRandomPass,
           biometricCredentialId
         );
+        const resolvedUserEmail = user.email || resolvedEmail;
+
         localStorage.setItem('big_v2_session_token', token);
-        localStorage.setItem('big_v2_current_user_email', user.email || resolvedEmail);
-        
+        localStorage.setItem('big_v2_current_user_email', resolvedUserEmail);
+        setEmail(resolvedUserEmail);
+        setHasBiometrics(true);
+
         // Show success message about welcome email and biometric enrollment
-        setSuccess(`🔐 Biometrics enrolled! Welcome email sent to ${user.email || resolvedEmail}.`);
+        setSuccess(`🔐 Biometrics enrolled! Welcome email sent to ${resolvedUserEmail}.`);
         
         // Small delay to show success message before navigating
         setTimeout(() => {
-          onAuthSuccess(true, user.name, user.email);
+          onAuthSuccess(true, user.name, resolvedUserEmail);
         }, 1500);
       } else {
         if (!biometricCredentialId) {
           throw new Error('Biometric key signature not found on this device');
         }
         const { token, user } = await apiService.biometricLogin(resolvedEmail, biometricCredentialId);
+        const resolvedUserEmail = user.email || resolvedEmail;
+
         localStorage.setItem('big_v2_session_token', token);
-        localStorage.setItem('big_v2_current_user_email', user.email || resolvedEmail);
-        onAuthSuccess(false, user.name, user.email);
+        localStorage.setItem('big_v2_current_user_email', resolvedUserEmail);
+        setEmail(resolvedUserEmail);
+        onAuthSuccess(false, user.name, resolvedUserEmail);
       }
     } catch (err: any) {
       setError(err.message || 'Biometric authentication failed');
@@ -137,12 +154,14 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
 
   const handleQuickBiometricLogin = () => {
     if (hasBiometrics) {
+      setIsLogin(true);
       setBioMode('authenticate');
       setBioModalOpen(true);
     } else {
-      // No biometrics enrolled yet on this device - guide user
+      // No biometrics enrolled yet on this device - prompt users to sign up first.
+      setIsLogin(false);
       setBioMode('register');
-      setBioModalOpen(true);
+      setError('No biometric enrollment found. Please create an account first and enable biometrics during sign-up.');
     }
   };
 
@@ -151,13 +170,7 @@ export function AuthView({ onAuthSuccess }: AuthViewProps) {
     setSuccess(null);
     setLoading(true);
     try {
-      const res = await fetch(`/api/auth/google/url?origin=${encodeURIComponent(window.location.origin)}`);
-      if (!res.ok) {
-        const errorBody = await res.json().catch(() => ({}));
-        throw new Error(errorBody.error || "Failed to connect to Google Auth API");
-      }
-      const data = await res.json();
-
+      const data = await apiService.getGoogleAuthUrl(window.location.origin);
       const authWindow = window.open(
         data.url,
         'google_oauth_popup',

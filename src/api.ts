@@ -31,19 +31,21 @@ export async function parseApiResponseBody<T>(res: Response): Promise<T> {
     throw new Error("Server returned an empty response");
   }
 
-  if (
+  const trimmed = text.trim();
+  const looksLikeJson =
     contentType.includes("application/json") ||
-    text.trim().startsWith("{") ||
-    text.trim().startsWith("[")
-  ) {
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("[");
+
+  if (looksLikeJson) {
     try {
       return JSON.parse(text) as T;
     } catch (error) {
-      throw new Error("Server returned invalid JSON");
+      throw new Error(`Server returned invalid JSON: ${trimmed}`);
     }
   }
 
-  throw new Error("Server returned an unexpected response");
+  throw new Error(`Server returned an unexpected response: ${trimmed}`);
 }
 
 export interface ForumThread {
@@ -120,7 +122,7 @@ function clearStoredSession(): void {
 export const apiService = {
   // Load entire unified backend database state
   async getFullState(): Promise<FullBackendState> {
-    const res = await fetch("/api/db");
+    const res = await fetch(buildApiUrl("/api/db"));
     if (!res.ok) {
       const errorBody = await parseApiResponseBody<{ error?: string }>(
         res,
@@ -139,7 +141,7 @@ export const apiService = {
       // No auth session yet; skip authenticated sync and let local storage act as fallback.
       return partialState as FullBackendState;
     }
-    const res = await fetch("/api/db/sync", {
+    const res = await fetch(buildApiUrl("/api/db/sync"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(partialState),
@@ -160,7 +162,7 @@ export const apiService = {
 
   // Granular updates (with token protection)
   async saveMembers(members: Member[]): Promise<Member[]> {
-    const res = await fetch("/api/members", {
+    const res = await fetch(buildApiUrl("/api/members"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(members),
@@ -169,7 +171,7 @@ export const apiService = {
   },
 
   async saveMember(member: Member): Promise<Member[]> {
-    const res = await fetch("/api/members", {
+    const res = await fetch(buildApiUrl("/api/members"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(member),
@@ -178,7 +180,7 @@ export const apiService = {
   },
 
   async savePosts(posts: Post[]): Promise<Post[]> {
-    const res = await fetch("/api/posts", {
+    const res = await fetch(buildApiUrl("/api/posts"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(posts),
@@ -187,7 +189,7 @@ export const apiService = {
   },
 
   async savePost(post: Post): Promise<Post[]> {
-    const res = await fetch("/api/posts", {
+    const res = await fetch(buildApiUrl("/api/posts"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(post),
@@ -196,7 +198,7 @@ export const apiService = {
   },
 
   async saveEvents(events: Event[]): Promise<Event[]> {
-    const res = await fetch("/api/events", {
+    const res = await fetch(buildApiUrl("/api/events"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(events),
@@ -205,7 +207,7 @@ export const apiService = {
   },
 
   async saveEvent(event: Event): Promise<Event[]> {
-    const res = await fetch("/api/events", {
+    const res = await fetch(buildApiUrl("/api/events"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(event),
@@ -214,7 +216,7 @@ export const apiService = {
   },
 
   async saveChallenges(challenges: Challenge[]): Promise<Challenge[]> {
-    const res = await fetch("/api/challenges", {
+    const res = await fetch(buildApiUrl("/api/challenges"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(challenges),
@@ -225,7 +227,7 @@ export const apiService = {
   async saveConversations(
     conversations: Conversation[],
   ): Promise<Conversation[]> {
-    const res = await fetch("/api/conversations", {
+    const res = await fetch(buildApiUrl("/api/conversations"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(conversations),
@@ -236,7 +238,7 @@ export const apiService = {
   async saveMentorshipPairs(
     pairs: MentorshipPair[],
   ): Promise<MentorshipPair[]> {
-    const res = await fetch("/api/mentorship-pairs", {
+    const res = await fetch(buildApiUrl("/api/mentorship-pairs"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(pairs),
@@ -245,7 +247,7 @@ export const apiService = {
   },
 
   async saveForumThreads(threads: ForumThread[]): Promise<ForumThread[]> {
-    const res = await fetch("/api/forum-threads", {
+    const res = await fetch(buildApiUrl("/api/forum-threads"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(threads),
@@ -256,7 +258,7 @@ export const apiService = {
   async saveCircleStates(
     states: Record<string, { status: string; moderation: string }>,
   ): Promise<any> {
-    const res = await fetch("/api/circle-states", {
+    const res = await fetch(buildApiUrl("/api/circle-states"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify(states),
@@ -273,7 +275,7 @@ export const apiService = {
     password: string,
     biometricCredentialId?: string,
   ): Promise<{ token: string; user: Member }> {
-    const res = await fetch("/api/auth/register", {
+    const res = await fetch(buildApiUrl("/api/auth/register"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, email, password, biometricCredentialId }),
@@ -291,7 +293,7 @@ export const apiService = {
   async biometricEnroll(
     biometricCredentialId: string,
   ): Promise<{ success: boolean; user: Member }> {
-    const res = await fetch("/api/auth/biometric-enroll", {
+    const res = await fetch(buildApiUrl("/api/auth/biometric-enroll"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ biometricCredentialId }),
@@ -305,12 +307,25 @@ export const apiService = {
     return parseApiResponseBody<{ success: boolean; user: Member }>(res);
   },
 
+  async getGoogleAuthUrl(origin: string): Promise<{ url: string }> {
+    const res = await fetch(
+      buildApiUrl(`/api/auth/google/url?origin=${encodeURIComponent(origin)}`),
+    );
+    if (!res.ok) {
+      const err = await parseApiResponseBody<{ error?: string }>(res).catch(
+        () => ({}) as { error?: string },
+      );
+      throw new Error(err.error || "Failed to prepare Google sign-in");
+    }
+    return parseApiResponseBody<{ url: string }>(res);
+  },
+
   // Login via biometric handshake
   async biometricLogin(
     email: string,
     biometricCredentialId: string,
   ): Promise<{ token: string; user: Member }> {
-    const res = await fetch("/api/auth/biometric-login", {
+    const res = await fetch(buildApiUrl("/api/auth/biometric-login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, biometricCredentialId }),
@@ -329,7 +344,7 @@ export const apiService = {
     email: string,
     password: string,
   ): Promise<{ token: string; user: Member }> {
-    const res = await fetch("/api/auth/login", {
+    const res = await fetch(buildApiUrl("/api/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
@@ -345,7 +360,7 @@ export const apiService = {
 
   // Verify stored session token
   async verifySession(): Promise<{ valid: boolean; user: Member }> {
-    const res = await fetch("/api/auth/verify-session", {
+    const res = await fetch(buildApiUrl("/api/auth/verify-session"), {
       headers: getHeaders(),
     });
     if (!res.ok) {
@@ -362,7 +377,7 @@ export const apiService = {
     email: string,
     actionName: string,
   ): Promise<{ success: boolean; message: string }> {
-    const res = await fetch("/api/auth/request-otp", {
+    const res = await fetch(buildApiUrl("/api/auth/request-otp"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, actionName }),
@@ -378,7 +393,7 @@ export const apiService = {
 
   // Verify true server-side OTP
   async verifyOtp(email: string, code: string): Promise<{ success: boolean }> {
-    const res = await fetch("/api/auth/verify-otp", {
+    const res = await fetch(buildApiUrl("/api/auth/verify-otp"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, code }),
@@ -398,7 +413,7 @@ export const apiService = {
     code: string,
     password: string,
   ): Promise<{ success: boolean; message: string }> {
-    const res = await fetch("/api/auth/reset-password", {
+    const res = await fetch(buildApiUrl("/api/auth/reset-password"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, code, password }),
@@ -414,7 +429,7 @@ export const apiService = {
 
   // Set Security PIN securely on the server
   async setPin(pin: string): Promise<{ success: boolean }> {
-    const res = await fetch("/api/security/set-pin", {
+    const res = await fetch(buildApiUrl("/api/security/set-pin"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ pin }),
@@ -428,7 +443,7 @@ export const apiService = {
 
   // Verify Security PIN securely on the server
   async verifyPin(pin: string): Promise<{ success: boolean }> {
-    const res = await fetch("/api/security/verify-pin", {
+    const res = await fetch(buildApiUrl("/api/security/verify-pin"), {
       method: "POST",
       headers: getHeaders(),
       body: JSON.stringify({ pin }),
@@ -442,7 +457,7 @@ export const apiService = {
 
   // Load audit logs for the current session
   async getAuditLogs(): Promise<any[]> {
-    const res = await fetch("/api/security/audit-logs", {
+    const res = await fetch(buildApiUrl("/api/security/audit-logs"), {
       headers: getHeaders(),
     });
     if (!res.ok) throw new Error("Failed to retrieve audit trail");
@@ -466,7 +481,7 @@ export const apiService = {
     message: string;
     provider?: string;
   }> {
-    const res = await fetch("/api/email/send", {
+    const res = await fetch(buildApiUrl("/api/email/send"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -497,7 +512,7 @@ export const apiService = {
     merchantRequestId: string;
     customerMessage: string;
   }> {
-    const res = await fetch("/api/mpesa/stkpush", {
+    const res = await fetch(buildApiUrl("/api/mpesa/stkpush"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
@@ -514,11 +529,14 @@ export const apiService = {
     checkoutRequestId: string,
     pin: string,
   ): Promise<{ success: boolean; receiptNumber: string; message: string }> {
-    const res = await fetch("/api/mpesa/stkpush/simulate-confirm", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ checkoutRequestId, pin }),
-    });
+    const res = await fetch(
+      buildApiUrl("/api/mpesa/stkpush/simulate-confirm"),
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ checkoutRequestId, pin }),
+      },
+    );
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || "STK Push authorization rejected");
@@ -527,9 +545,7 @@ export const apiService = {
   },
 
   // Query STK Push status
-  async queryMpesaStkPushStatus(
-    checkoutRequestId: string,
-  ): Promise<{
+  async queryMpesaStkPushStatus(checkoutRequestId: string): Promise<{
     checkoutRequestId: string;
     status: string;
     amount: number;
@@ -537,7 +553,9 @@ export const apiService = {
     mpesaReceiptNumber?: string;
     resultDesc?: string;
   }> {
-    const res = await fetch(`/api/mpesa/stkpush/query/${checkoutRequestId}`);
+    const res = await fetch(
+      buildApiUrl(`/api/mpesa/stkpush/${checkoutRequestId}`),
+    );
     if (!res.ok) {
       const err = await res.json();
       throw new Error(err.error || "Failed to query STK Push status");

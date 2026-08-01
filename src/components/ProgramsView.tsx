@@ -57,7 +57,7 @@ export function ProgramsView({ setCurrentView }: ProgramsViewProps) {
               <div 
                 key={idx} 
                 className="group flex flex-col justify-between p-8 rounded-[2rem] border border-slate-100 bg-white shadow-xl shadow-slate-100/50 hover:shadow-2xl hover:border-secondary/20 transition-all cursor-pointer"
-                onClick={() => setCurrentView('auth')}
+                onClick={() => setCurrentView('auth', { authMode: 'register' })}
               >
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
