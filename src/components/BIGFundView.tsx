@@ -389,36 +389,7 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false }: BIGFund
 
   const launchPaymentGateway = async (payload: any) => {
     if (payload.paymentProvider === 'M-Pesa') {
-      const formattedPhone = mpesaPhone || '254712345678';
-      setIsSimulatingMpesa(true);
-      setMpesaCountdown(25);
-      setMpesaStatus('waiting_pin');
-      setMpesaPin('');
-      setMpesaCustomerMessage(`Initiating Safaricom STK Push to +${formattedPhone}...`);
-
-      try {
-        const result = await apiService.initiateMpesaStkPush({
-          phoneNumber: formattedPhone,
-          amount: payload.amount,
-          accountReference: payload.campaignId,
-          campaignTitle: payload.campaignTitle,
-          donorName: payload.donorName,
-          donorEmail: payload.donorEmail,
-          isAnonymous: payload.isAnonymous,
-          isMonthly: payload.isMonthly
-        });
-
-        if (result.success) {
-          setActiveCheckoutRequestId(result.checkoutRequestId);
-          setMpesaCustomerMessage(result.customerMessage || `STK Push prompt sent to +${formattedPhone}`);
-        } else {
-          alert('Failed to dispatch M-Pesa STK Push prompt');
-          setIsSimulatingMpesa(false);
-        }
-      } catch (err: any) {
-        console.warn('STK Push dispatch notice:', err);
-        setMpesaCustomerMessage(`STK Push prompt dispatched to +${formattedPhone}`);
-      }
+      openMpesaStkPushModal(payload.campaignTitle, payload.campaignId, payload.amount);
     } else {
       setIsSimulatingCard(true);
       setCardNumber('');
@@ -2119,38 +2090,27 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false }: BIGFund
                              </div>
                           </div>
 
-                          {/* M-Pesa Phone Input */}
+                          {/* M-Pesa Paybill Info */}
                           {paymentProvider === 'mpesa' && (
-                            <div className="space-y-1.5 bg-emerald-50/90 border border-emerald-200 rounded-xl p-3.5 transition-all">
+                            <div className="space-y-2.5 bg-emerald-50/90 border border-emerald-200 rounded-xl p-3.5 transition-all">
                               <div className="flex items-center justify-between">
                                 <label className="text-[9px] font-black uppercase tracking-widest text-emerald-800 flex items-center gap-1.5">
                                   <Phone className="h-3 w-3 text-emerald-600" />
-                                  Safaricom M-Pesa Phone Number
+                                  Safaricom M-Pesa Paybill
                                 </label>
                                 <span className="text-[8px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                                  STK PUSH ENABLED
+                                  PAYBILL 247247
                                 </span>
                               </div>
-                              <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs font-bold text-slate-600">
-                                  <span>🇰🇪</span>
-                                  <span>+254</span>
+                              <div className="bg-white border border-emerald-200 rounded-lg p-2.5 space-y-1 text-xs">
+                                <div className="flex items-center justify-between font-mono text-[11px]">
+                                  <span className="text-slate-600">Paybill: <strong className="text-slate-900 font-bold">247247</strong></span>
+                                  <span className="text-slate-600">Account: <strong className="text-emerald-800 font-bold">BIGFUND</strong></span>
                                 </div>
-                                <input
-                                  type="tel"
-                                  required
-                                  placeholder="712 345 678"
-                                  value={mpesaPhone.startsWith('254') ? mpesaPhone.slice(3) : mpesaPhone.startsWith('0') ? mpesaPhone.slice(1) : mpesaPhone}
-                                  onChange={(e) => {
-                                    const raw = e.target.value.replace(/\D/g, '');
-                                    setMpesaPhone('254' + raw);
-                                  }}
-                                  className="w-full bg-white border border-emerald-200 focus:border-emerald-500 rounded-lg pl-16 pr-4 py-2 text-xs text-slate-900 font-mono font-medium outline-none shadow-sm transition"
-                                />
+                                <p className="text-[9px] text-slate-500 leading-tight">
+                                  Pay via Paybill on your phone, then click deploy to enter and verify your M-Pesa Transaction ID.
+                                </p>
                               </div>
-                              <p className="text-[9px] text-emerald-700 font-medium">
-                                📲 A Safaricom STK Push authorization prompt will be dispatched directly to this handset.
-                              </p>
                             </div>
                           )}
 
@@ -2173,126 +2133,6 @@ export function BIGFundView({ setCurrentView, isAuthenticated = false }: BIGFund
               </div>
 
             </div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* SECURE HIGH-FIDELITY MOBILE DEVICE POPUP (M-PESA SIMULATION) */}
-      <AnimatePresence>
-        {isSimulatingMpesa && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
-            <div 
-              onClick={() => setIsSimulatingMpesa(false)} 
-              className="absolute inset-0 bg-slate-950/60 backdrop-blur-md"
-            />
-
-            {/* Handheld Device */}
-            <motion.div
-              initial={{ scale: 0.9, y: 20, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              exit={{ scale: 0.9, y: 20, opacity: 0 }}
-              className="bg-slate-900 border-[8px] border-slate-800 rounded-[3rem] w-[310px] aspect-[10/19] relative z-10 overflow-hidden flex flex-col shadow-2xl"
-            >
-              {/* Speaker mesh / camera island */}
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 h-4 w-24 bg-slate-800 rounded-full z-30 flex items-center justify-center">
-                <div className="h-1 w-8 bg-slate-700 rounded-full" />
-              </div>
-
-              {/* Simulated Phone Screen */}
-              <div className="flex-1 bg-white p-5 pt-8 flex flex-col justify-between relative select-none text-slate-900">
-                
-                {/* M-Pesa Brand Header */}
-                <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse" />
-                    <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Safaricom M-Pesa</span>
-                  </div>
-                  <span className="text-[8px] text-slate-400 uppercase font-black">STK PUSH SIMULATOR</span>
-                </div>
-
-                {mpesaStatus === 'waiting_pin' && (
-                  <div className="flex-1 flex flex-col justify-between pt-4">
-                    
-                    {/* Prompt Box */}
-                    <div className="bg-slate-50 rounded-2xl p-4.5 border border-slate-200 text-center space-y-3">
-                      <p className="text-xs text-slate-700 font-medium">
-                        Pay KES <span className="text-slate-900 font-black">{finalDonationAmount.toLocaleString()}</span> to <strong className="text-pink-600">BIG FUND</strong>?
-                      </p>
-                      
-                      {/* Password stars visual field */}
-                      <div className="bg-white border border-slate-200 rounded-xl py-2.5 flex items-center justify-center font-mono text-lg text-emerald-600 tracking-[0.4em]">
-                        {mpesaPin ? '•'.repeat(mpesaPin.length) : 'ENTER PIN'}
-                      </div>
-
-                      <div className="text-[9px] text-slate-500">
-                        Transaction terminates in <span className="text-slate-900 font-bold">{mpesaCountdown}s</span>
-                      </div>
-                    </div>
-
-                    {/* Keyboard pad simulation */}
-                    <div className="grid grid-cols-3 gap-2 py-4">
-                      {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '0', '✓'].map(btn => (
-                        <button
-                          key={btn}
-                          type="button"
-                          onClick={() => {
-                            if (btn === 'C') {
-                              setMpesaPin('');
-                            } else if (btn === '✓') {
-                              confirmSimulatedMpesa();
-                            } else if (mpesaPin.length < 4) {
-                              setMpesaPin(mpesaPin + btn);
-                            }
-                          }}
-                          className="h-11 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800 font-mono text-sm font-bold flex items-center justify-center transition active:scale-95"
-                        >
-                          {btn}
-                        </button>
-                      ))}
-                    </div>
-
-                  </div>
-                )}
-
-                {mpesaStatus === 'processing' && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
-                    <RefreshCw className="h-8 w-8 text-emerald-600 animate-spin" />
-                    <p className="text-xs font-bold text-slate-900 uppercase tracking-wider">Verifying Ledger Authorization...</p>
-                    <p className="text-[10px] text-slate-500">Polling Safaricom transaction feedback nodes...</p>
-                  </div>
-                )}
-
-                {mpesaStatus === 'success' && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4 animate-scale-up">
-                    <div className="h-16 w-16 rounded-full bg-emerald-100 border-2 border-emerald-600 flex items-center justify-center text-emerald-600">
-                      <CheckCircle2 className="h-8 w-8 stroke-[2.5]" />
-                    </div>
-                    <h4 className="text-sm font-black text-slate-900 uppercase tracking-wider">Transaction Approved</h4>
-                    <p className="text-[11px] text-slate-600 max-w-[200px] leading-relaxed">
-                      Receipt Ref: <span className="font-mono text-emerald-700 font-extrabold block text-xs mt-1 bg-emerald-50 py-1 px-2 rounded border border-emerald-200">{mpesaReceiptNumber || `SK${Math.floor(100+Math.random()*899)}89YP`}</span> KES {finalDonationAmount.toLocaleString()} received on live ledger.
-                    </p>
-                  </div>
-                )}
-
-                {mpesaStatus === 'failed' && (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
-                    <div className="h-16 w-16 rounded-full bg-rose-100 border border-rose-500 flex items-center justify-center text-rose-600">
-                      <AlertCircle className="h-8 w-8" />
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider">STK Push Terminated</h4>
-                    <p className="text-[10px] text-slate-500">Simulated Safaricom session callback timed out or rejected by client PIN failure.</p>
-                    <button 
-                      onClick={() => setMpesaStatus('waiting_pin')}
-                      className="px-4 py-1.5 bg-slate-100 rounded-lg text-[10px] text-slate-800 font-bold"
-                    >
-                      Retry Simulation
-                    </button>
-                  </div>
-                )}
-
-              </div>
-            </motion.div>
           </div>
         )}
       </AnimatePresence>

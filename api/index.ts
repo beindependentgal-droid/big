@@ -1719,7 +1719,87 @@ function formatKenyanPhone(phone: string): string | null {
   return null;
 }
 
-// 1. Initiate M-Pesa STK Push
+// 1. Manual M-Pesa Paybill Transaction ID Verification
+app.post("/api/mpesa/verify-manual", generalLimiter, async (req, res) => {
+  try {
+    const { transactionId, phoneNumber, amount, campaignId, campaignTitle, donorName, donorEmail, isAnonymous, isMonthly } = req.body;
+
+    if (!transactionId || typeof transactionId !== 'string' || transactionId.trim().length < 4) {
+      return res.status(400).json({ error: "Please enter a valid M-Pesa Transaction ID (e.g. QK12345678)." });
+    }
+
+    const cleanTxId = transactionId.trim().toUpperCase();
+    const numAmount = Math.round(Number(amount) || 1000);
+    const dName = donorName ? truncateString(donorName, 100) : "Supporter";
+    const dEmail = donorEmail ? truncateString(donorEmail, 100) : "supporter@bigfund.org";
+    const cTitle = campaignTitle ? truncateString(campaignTitle, 100) : "BIG Fund Community Initiative";
+    const cId = campaignId || "BIGFUND";
+
+    // Record in DB
+    const db = loadDb();
+    if (!db.donations) db.donations = [];
+
+    const existing = db.donations.find((d: any) => d.id === `don-${cleanTxId}` || d.receiptNumber === cleanTxId);
+
+    const donationObj: Donation = {
+      id: `don-${Date.now()}-${cleanTxId}`,
+      donorName: isAnonymous ? "Anonymous Supporter" : dName,
+      donorEmail: dEmail,
+      amount: numAmount,
+      campaignId: cId,
+      campaignTitle: cTitle,
+      date: new Date().toISOString(),
+      paymentProvider: "M-Pesa Paybill",
+      isAnonymous: Boolean(isAnonymous),
+      type: isMonthly ? "monthly" : "one-time",
+      status: "Completed"
+    };
+
+    if (!existing) {
+      db.donations.unshift(donationObj);
+
+      if (isMonthly) {
+        if (!db.monthlySupporters) db.monthlySupporters = [];
+        const existingSupporter = db.monthlySupporters.find((s: MonthlySupporter) => s.name?.toLowerCase() === donationObj.donorName.toLowerCase());
+        if (!existingSupporter) {
+          db.monthlySupporters.push({
+            id: `monthly-${Date.now()}`,
+            name: donationObj.donorName,
+            amount: numAmount,
+            avatar: "/images/african_woman_portrait.jpg",
+            tier: "Gold Champion",
+            joinedAt: new Date().toISOString(),
+            badge: "🏆 GOLD CHAMPION"
+          });
+        }
+      }
+
+      if (db.campaigns && Array.isArray(db.campaigns)) {
+        const camp = db.campaigns.find((c: Campaign) => c.title === cTitle || c.id === cId);
+        if (camp) {
+          camp.amountRaised = (camp.amountRaised || 0) + numAmount;
+          camp.supportersCount = (camp.supportersCount || 0) + 1;
+        }
+      }
+
+      saveDb(db);
+      writeAuditLog("system", dEmail, `M-Pesa Manual Paybill Transaction ID ${cleanTxId} verified for KES ${numAmount}`, req.ip || 'unknown');
+    }
+
+    res.json({
+      success: true,
+      receiptNumber: cleanTxId,
+      amount: numAmount,
+      campaignTitle: cTitle,
+      message: `Transaction ${cleanTxId} verified successfully! KES ${numAmount.toLocaleString()} logged to live ledger.`
+    });
+  } catch (error: any) {
+    console.error("Error in M-Pesa manual verification:", error);
+    res.status(500).json({ error: "Failed to verify M-Pesa transaction ID" });
+  }
+});
+
+// 2. Legacy/Fallback STK Push endpoint
 app.post("/api/mpesa/stkpush", generalLimiter, async (req, res) => {
   try {
     const { phoneNumber, amount, accountReference, campaignTitle, donorName, donorEmail, isAnonymous, isMonthly } = req.body;

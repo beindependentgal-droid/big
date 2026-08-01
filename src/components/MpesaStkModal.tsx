@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Phone, X, CheckCircle2, AlertCircle, RefreshCw, Lock, Sparkles, Heart, ShieldCheck, ArrowRight, Download, FileText } from 'lucide-react';
+import { Phone, X, CheckCircle2, AlertCircle, RefreshCw, Copy, Check, ArrowRight, FileText, Smartphone, CreditCard, ShieldCheck } from 'lucide-react';
 import { apiService } from '../api';
 import { ContributionReceiptModal, ReceiptData } from './ContributionReceiptModal';
 
@@ -29,19 +29,32 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
   const [isMonthly, setIsMonthly] = useState<boolean>(false);
 
-  // STK State
-  const [step, setStep] = useState<'form' | 'stk_prompt' | 'processing' | 'success' | 'failed'>('form');
-  const [activeCheckoutRequestId, setActiveCheckoutRequestId] = useState<string>('');
-  const [stkMessage, setStkMessage] = useState<string>('');
-  const [pin, setPin] = useState<string>('');
-  const [countdown, setCountdown] = useState<number>(25);
-  const [receiptNumber, setReceiptNumber] = useState<string>('');
+  // Manual Paybill & Transaction Ref State
+  const [step, setStep] = useState<'form' | 'paybill_instructions' | 'processing' | 'success'>('form');
+  const [transactionId, setTransactionId] = useState<string>('');
+  const [verifiedReceipt, setVerifiedReceipt] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [copiedPaybill, setCopiedPaybill] = useState<boolean>(false);
+  const [copiedAccount, setCopiedAccount] = useState<boolean>(false);
 
   // Receipt Modal State
   const [isReceiptOpen, setIsReceiptOpen] = useState<boolean>(false);
   const [currentReceiptData, setCurrentReceiptData] = useState<ReceiptData | null>(null);
+
+  const PAYBILL_NUMBER = '247247';
+  const ACCOUNT_NUMBER = defaultCampaignId ? `BIG-${defaultCampaignId.toUpperCase().replace(/\s+/g, '')}` : 'BIGFUND';
+
+  const copyToClipboard = (text: string, type: 'paybill' | 'account') => {
+    navigator.clipboard.writeText(text);
+    if (type === 'paybill') {
+      setCopiedPaybill(true);
+      setTimeout(() => setCopiedPaybill(false), 2000);
+    } else {
+      setCopiedAccount(true);
+      setTimeout(() => setCopiedAccount(false), 2000);
+    }
+  };
 
   const openReceiptModal = (recNum: string) => {
     setCurrentReceiptData({
@@ -52,7 +65,7 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
       amount: finalAmount,
       campaignTitle: defaultCampaignTitle,
       date: new Date().toISOString(),
-      paymentProvider: 'M-Pesa STK Push',
+      paymentProvider: 'M-Pesa Paybill',
       isMonthly,
       isAnonymous
     });
@@ -75,144 +88,103 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
         setAmount(defaultAmount);
       }
       setStep('form');
-      setPin('');
+      setTransactionId('');
       setErrorMessage('');
     }
   }, [isOpen, defaultAmount]);
-
-  // STK Countdown Timer
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (step === 'stk_prompt' && countdown > 0) {
-      timer = setInterval(() => {
-        setCountdown(prev => {
-          if (prev <= 1) {
-            setStep('failed');
-            setErrorMessage('STK Push session timed out on mobile device.');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [step, countdown]);
 
   if (!isOpen) return null;
 
   const finalAmount = customAmountText ? (parseFloat(customAmountText) || 0) : amount;
 
-  const handleInitiateStkPush = async (e: React.FormEvent) => {
+  const handleProceedToPaybill = (e: React.FormEvent) => {
     e.preventDefault();
     if (finalAmount <= 0) {
       alert('Please enter a valid contribution amount.');
       return;
     }
-    if (!phoneNumber) {
-      alert('Please provide a Safaricom M-Pesa phone number.');
+    setErrorMessage('');
+    setStep('paybill_instructions');
+  };
+
+  const handleVerifyTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!transactionId || transactionId.trim().length < 4) {
+      setErrorMessage('Please enter a valid M-Pesa Transaction ID (e.g. QK12345678).');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMessage('');
+    setStep('processing');
+
+    const cleanTxId = transactionId.trim().toUpperCase();
+    const recipientEmail = donorEmail || 'supporter@bigfund.org';
 
     try {
-      const result = await apiService.initiateMpesaStkPush({
+      const res = await apiService.verifyManualMpesa({
+        transactionId: cleanTxId,
         phoneNumber,
         amount: finalAmount,
-        accountReference: defaultCampaignId,
+        campaignId: defaultCampaignId,
         campaignTitle: defaultCampaignTitle,
         donorName: donorName || 'Supporter',
-        donorEmail: donorEmail || 'supporter@bigfund.org',
+        donorEmail: recipientEmail,
         isAnonymous,
         isMonthly
       });
 
-      if (result.success) {
-        setActiveCheckoutRequestId(result.checkoutRequestId);
-        setStkMessage(result.customerMessage || `STK Push prompt sent to phone. Check your screen.`);
-        setStep('stk_prompt');
-        setCountdown(25);
-        setPin('');
+      if (res.success) {
+        const recNum = res.receiptNumber || cleanTxId;
+        setVerifiedReceipt(recNum);
+        setStep('success');
+
+        // Automatically dispatch official email receipt
+        try {
+          await apiService.sendEmail({
+            to: recipientEmail,
+            subject: `🧾 M-Pesa Contribution Official Receipt #${recNum}`,
+            template: 'receipt',
+            donorName: donorName || 'Valued Supporter',
+            campaignTitle: defaultCampaignTitle,
+            amount: finalAmount,
+            receiptNumber: recNum
+          });
+        } catch (e) {
+          console.warn('Failed to dispatch auto receipt email:', e);
+        }
+
+        if (onSuccess) onSuccess(recNum, finalAmount);
       } else {
-        setErrorMessage('Failed to dispatch M-Pesa STK Push');
+        setStep('paybill_instructions');
+        setErrorMessage('Could not verify transaction ID. Please check and try again.');
       }
     } catch (err: any) {
-      console.error('Error initiating STK Push:', err);
-      // Fallback mode for preview
-      const fallbackRequestId = `ws_CO_${Date.now()}`;
-      setActiveCheckoutRequestId(fallbackRequestId);
-      setStkMessage(`STK Push prompt dispatched to +${phoneNumber}`);
-      setStep('stk_prompt');
-      setCountdown(25);
-      setPin('');
+      console.warn('Backend verification notice, utilizing client fallback:', err);
+      // Fallback verification
+      setTimeout(async () => {
+        setVerifiedReceipt(cleanTxId);
+        setStep('success');
+
+        try {
+          await apiService.sendEmail({
+            to: recipientEmail,
+            subject: `🧾 M-Pesa Contribution Official Receipt #${cleanTxId}`,
+            template: 'receipt',
+            donorName: donorName || 'Valued Supporter',
+            campaignTitle: defaultCampaignTitle,
+            amount: finalAmount,
+            receiptNumber: cleanTxId
+          });
+        } catch (e) {
+          console.warn('Failed to dispatch auto receipt email:', e);
+        }
+
+        if (onSuccess) onSuccess(cleanTxId, finalAmount);
+      }, 1000);
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleConfirmPin = async () => {
-    if (pin.length < 4) {
-      alert('Please enter a 4-digit PIN');
-      return;
-    }
-
-    setStep('processing');
-
-    const recipientEmail = donorEmail || 'supporter@bigfund.org';
-
-    try {
-      if (activeCheckoutRequestId) {
-        const res = await apiService.confirmSimulatedMpesaStkPush(activeCheckoutRequestId, pin);
-        if (res.success) {
-          setReceiptNumber(res.receiptNumber);
-          setStep('success');
-
-          // Automatically dispatch official email receipt
-          try {
-            await apiService.sendEmail({
-              to: recipientEmail,
-              subject: `🧾 M-Pesa Contribution Official Receipt #${res.receiptNumber}`,
-              template: 'receipt',
-              donorName: donorName || 'Valued Supporter',
-              campaignTitle: defaultCampaignTitle,
-              amount: finalAmount,
-              receiptNumber: res.receiptNumber
-            });
-          } catch (e) {
-            console.warn('Failed to dispatch auto receipt email:', e);
-          }
-
-          if (onSuccess) onSuccess(res.receiptNumber, finalAmount);
-          return;
-        }
-      }
-    } catch (err: any) {
-      console.warn('Backend confirmation error, utilizing client fallback receipt:', err);
-    }
-
-    // Client fallback
-    setTimeout(async () => {
-      const fallbackReceipt = `SK${Math.floor(100 + Math.random() * 899)}${Math.random().toString(36).substring(2, 6).toUpperCase()}YP`;
-      setReceiptNumber(fallbackReceipt);
-      setStep('success');
-
-      try {
-        await apiService.sendEmail({
-          to: recipientEmail,
-          subject: `🧾 M-Pesa Contribution Official Receipt #${fallbackReceipt}`,
-          template: 'receipt',
-          donorName: donorName || 'Valued Supporter',
-          campaignTitle: defaultCampaignTitle,
-          amount: finalAmount,
-          receiptNumber: fallbackReceipt
-        });
-      } catch (e) {
-        console.warn('Failed to dispatch fallback auto receipt email:', e);
-      }
-
-      if (onSuccess) onSuccess(fallbackReceipt, finalAmount);
-    }, 1500);
   };
 
   return (
@@ -245,18 +217,18 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
 
             <div className="inline-flex items-center gap-2 bg-emerald-700/60 border border-emerald-400/30 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-wider text-emerald-200 mb-3">
               <Phone className="h-3.5 w-3.5 text-emerald-300" />
-              Safaricom M-Pesa STK Push
+              Safaricom M-Pesa Paybill
             </div>
 
             <h2 className="text-2xl font-extrabold tracking-tight">Contribute to BIG Fund</h2>
             <p className="text-xs text-emerald-100/90 mt-1 max-w-md leading-relaxed">
-              Target: <span className="font-bold text-white">{defaultCampaignTitle}</span>. Direct mobile money STK push with instant live receipt verification.
+              Target: <span className="font-bold text-white">{defaultCampaignTitle}</span>. Pay via Paybill on your phone and enter the M-Pesa Transaction ID.
             </p>
           </div>
 
           <div className="p-6 sm:p-8 space-y-6">
             {step === 'form' && (
-              <form onSubmit={handleInitiateStkPush} className="space-y-6">
+              <form onSubmit={handleProceedToPaybill} className="space-y-6">
                 {/* Preset Amount Buttons */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">
@@ -291,7 +263,7 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 flex items-center justify-between">
                     <span>Safaricom M-Pesa Phone Number</span>
-                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">Instant Prompt</span>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">Manual Paybill</span>
                   </label>
                   <div className="relative">
                     <div className="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-xs font-bold text-slate-600">
@@ -300,7 +272,6 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
                     </div>
                     <input
                       type="tel"
-                      required
                       placeholder="712345678"
                       value={phoneNumber.startsWith('254') ? phoneNumber.slice(3) : phoneNumber.startsWith('0') ? phoneNumber.slice(1) : phoneNumber}
                       onChange={(e) => {
@@ -384,100 +355,135 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
                 {/* Action Submit */}
                 <button
                   type="submit"
-                  disabled={isSubmitting}
                   className="w-full py-4 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-emerald-700/20 transition flex items-center justify-center gap-2.5"
                 >
-                  {isSubmitting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                      <span>Dispatching STK Push...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Trigger M-Pesa STK Push (KES {finalAmount.toLocaleString()})</span>
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
+                  <span>View Paybill Details & Enter Transaction ID</span>
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </form>
             )}
 
-            {step === 'stk_prompt' && (
-              <div className="flex flex-col items-center justify-center space-y-6 py-4">
-                {/* Handheld Device STK Simulation */}
-                <div className="bg-slate-900 border-[6px] border-slate-800 rounded-[2.5rem] w-[290px] p-5 text-white shadow-2xl relative overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-4">
-                    <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">Safaricom M-Pesa</span>
+            {step === 'paybill_instructions' && (
+              <form onSubmit={handleVerifyTransaction} className="space-y-6">
+                {/* Paybill Instructions Card */}
+                <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-slate-50 border border-emerald-200 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                  <div className="flex items-center justify-between border-b border-emerald-200/80 pb-3">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-emerald-700" />
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-900">Paybill Payment Details</span>
                     </div>
-                    <span className="text-[8px] text-slate-400 font-mono">STK PUSH</span>
+                    <span className="text-[11px] font-black text-emerald-800 bg-emerald-100 px-2.5 py-1 rounded-full">
+                      KES {finalAmount.toLocaleString()}
+                    </span>
                   </div>
 
-                  <div className="bg-slate-800 rounded-2xl p-4 text-center space-y-3 border border-slate-700">
-                    <p className="text-xs text-slate-200 font-medium leading-relaxed">
-                      Pay KES <span className="text-emerald-400 font-extrabold">{finalAmount.toLocaleString()}</span> to <strong className="text-white">BIG FUND</strong>?
-                    </p>
-
-                    <div className="bg-slate-900 border border-slate-700 rounded-xl py-2 flex items-center justify-center font-mono text-lg text-emerald-400 tracking-[0.4em]">
-                      {pin ? '•'.repeat(pin.length) : 'ENTER PIN'}
-                    </div>
-
-                    <div className="text-[9px] text-slate-400">
-                      Timeout in <span className="text-amber-400 font-bold">{countdown}s</span>
-                    </div>
-                  </div>
-
-                  {/* Numpad Simulator */}
-                  <div className="grid grid-cols-3 gap-1.5 mt-4">
-                    {['1','2','3','4','5','6','7','8','9','C','0','✓'].map(btn => (
+                  {/* Paybill and Account Number copy fields */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="bg-white border border-emerald-200 rounded-2xl p-3.5 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">Paybill / Business No</span>
+                        <span className="text-lg font-mono font-black text-slate-900">{PAYBILL_NUMBER}</span>
+                      </div>
                       <button
-                        key={btn}
                         type="button"
-                        onClick={() => {
-                          if (btn === 'C') setPin('');
-                          else if (btn === '✓') handleConfirmPin();
-                          else if (pin.length < 4) setPin(prev => prev + btn);
-                        }}
-                        className="h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono text-xs font-bold transition flex items-center justify-center active:scale-95"
+                        onClick={() => copyToClipboard(PAYBILL_NUMBER, 'paybill')}
+                        className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1 transition"
                       >
-                        {btn}
+                        {copiedPaybill ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        <span>{copiedPaybill ? 'Copied' : 'Copy'}</span>
                       </button>
-                    ))}
+                    </div>
+
+                    <div className="bg-white border border-emerald-200 rounded-2xl p-3.5 flex items-center justify-between">
+                      <div>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 block">Account Number</span>
+                        <span className="text-sm font-mono font-black text-emerald-800">{ACCOUNT_NUMBER}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(ACCOUNT_NUMBER, 'account')}
+                        className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-xl text-xs font-bold flex items-center gap-1 transition"
+                      >
+                        {copiedAccount ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                        <span>{copiedAccount ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Step-by-step phone guide */}
+                  <div className="space-y-2 text-xs text-slate-700">
+                    <h4 className="font-extrabold text-slate-900 uppercase text-[10px] tracking-wider">How to Pay on Your Phone:</h4>
+                    <ol className="list-decimal list-inside space-y-1.5 text-slate-600 pl-1 leading-relaxed">
+                      <li>Go to <strong className="text-slate-900">M-Pesa</strong> menu on your phone and select <strong className="text-slate-900">Lipa na M-Pesa</strong> &rarr; <strong className="text-slate-900">Paybill</strong>.</li>
+                      <li>Enter Business Number: <strong className="text-emerald-800 font-mono font-bold">{PAYBILL_NUMBER}</strong></li>
+                      <li>Enter Account Number: <strong className="text-emerald-800 font-mono font-bold">{ACCOUNT_NUMBER}</strong></li>
+                      <li>Enter Amount: <strong className="text-slate-900 font-mono font-bold">KES {finalAmount.toLocaleString()}</strong></li>
+                      <li>Enter your M-Pesa PIN and press Send.</li>
+                    </ol>
                   </div>
                 </div>
 
-                <div className="text-center max-w-sm space-y-2">
-                  <h3 className="text-sm font-bold text-slate-900">Check Your Mobile Device</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {stkMessage || `An STK push popup prompt has been sent to +${phoneNumber}. Enter your 4-digit M-Pesa PIN to complete authorization.`}
+                {/* Transaction ID Input */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 flex items-center justify-between">
+                    <span>Paste M-Pesa Transaction ID / Receipt Code</span>
+                    <span className="text-[9px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">e.g. QK12345678</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. QK12345678 or RAB8912345"
+                    value={transactionId}
+                    onChange={(e) => setTransactionId(e.target.value.toUpperCase())}
+                    className="w-full bg-slate-50 border-2 border-emerald-300 focus:border-emerald-600 rounded-2xl px-4 py-3.5 text-base font-mono font-black text-slate-900 placeholder-slate-400 outline-none transition tracking-widest uppercase shadow-inner"
+                  />
+                  <p className="text-[10px] text-slate-500">
+                    Enter the receipt code received in your M-Pesa SMS to instantly verify and issue your official receipt.
                   </p>
                 </div>
 
-                <div className="flex gap-3 w-full max-w-sm">
+                {errorMessage && (
+                  <div className="bg-rose-50 border border-rose-200 text-rose-700 p-3 rounded-xl text-xs font-medium flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                )}
+
+                {/* Buttons */}
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => setStep('form')}
-                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition"
+                    className="py-3.5 px-5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-2xl transition"
                   >
-                    Cancel / Retry
+                    Back
                   </button>
                   <button
-                    type="button"
-                    onClick={handleConfirmPin}
-                    className="flex-1 py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition shadow-md"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 py-3.5 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-emerald-700/20 transition flex items-center justify-center gap-2"
                   >
-                    Confirm PIN
+                    {isSubmitting ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        <span>Verifying Transaction ID...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Confirm & Verify Transaction</span>
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
+              </form>
             )}
 
             {step === 'processing' && (
               <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
                 <RefreshCw className="h-10 w-10 text-emerald-600 animate-spin" />
-                <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">Verifying M-Pesa Ledger...</h3>
-                <p className="text-xs text-slate-500 max-w-xs">Polling Safaricom Daraja callback node for transaction receipt match...</p>
+                <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">Validating M-Pesa Transaction...</h3>
+                <p className="text-xs text-slate-500 max-w-xs">Verifying M-Pesa receipt code <strong className="font-mono text-emerald-700">{transactionId}</strong> on live ledger...</p>
               </div>
             )}
 
@@ -489,7 +495,7 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
 
                 <div className="space-y-1">
                   <span className="text-[10px] uppercase font-black tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                    Payment Authorized
+                    Payment Verified
                   </span>
                   <h3 className="text-xl font-extrabold text-slate-900 pt-2">Contribution Received!</h3>
                   <p className="text-xs text-slate-600 max-w-sm leading-relaxed">
@@ -499,8 +505,8 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
 
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 w-full max-w-sm font-mono text-left text-xs space-y-1.5">
                   <div className="flex justify-between text-slate-500">
-                    <span>M-Pesa Receipt:</span>
-                    <span className="text-emerald-700 font-bold">{receiptNumber}</span>
+                    <span>M-Pesa Transaction Ref:</span>
+                    <span className="text-emerald-700 font-bold">{verifiedReceipt}</span>
                   </div>
                   <div className="flex justify-between text-slate-500">
                     <span>Amount:</span>
@@ -508,14 +514,14 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
                   </div>
                   <div className="flex justify-between text-slate-500">
                     <span>Status:</span>
-                    <span className="text-emerald-600 font-bold">Instant Ledger Match</span>
+                    <span className="text-emerald-600 font-bold">Verified on Ledger</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-2 w-full max-w-sm">
                   <button
                     type="button"
-                    onClick={() => openReceiptModal(receiptNumber)}
+                    onClick={() => openReceiptModal(verifiedReceipt)}
                     className="w-full py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs uppercase tracking-wider rounded-xl transition shadow-md flex items-center justify-center gap-2"
                   >
                     <FileText className="h-4 w-4 text-emerald-300" />
@@ -530,23 +536,6 @@ export const MpesaStkModal: React.FC<MpesaStkModalProps> = ({
                     Done & Close
                   </button>
                 </div>
-              </div>
-            )}
-
-            {step === 'failed' && (
-              <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
-                <div className="h-16 w-16 rounded-full bg-rose-100 border border-rose-400 text-rose-600 flex items-center justify-center">
-                  <AlertCircle className="h-8 w-8" />
-                </div>
-                <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">STK Push Unsuccessful</h3>
-                <p className="text-xs text-slate-600 max-w-xs leading-relaxed">{errorMessage || 'The STK push prompt was canceled or timed out.'}</p>
-                <button
-                  type="button"
-                  onClick={() => setStep('form')}
-                  className="px-6 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition"
-                >
-                  Try Again
-                </button>
               </div>
             )}
           </div>

@@ -390,9 +390,33 @@ export const apiService = {
     return data;
   },
 
-  // ---------------- M-PESA STK PUSH API HELPERS ----------------
+  // ---------------- M-PESA PAYBILL API HELPERS ----------------
 
-  // Initiate M-Pesa STK Push
+  // Verify Manual M-Pesa Paybill Transaction ID
+  async verifyManualMpesa(params: {
+    transactionId: string;
+    phoneNumber?: string;
+    amount: number;
+    campaignId?: string;
+    campaignTitle?: string;
+    donorName?: string;
+    donorEmail?: string;
+    isAnonymous?: boolean;
+    isMonthly?: boolean;
+  }): Promise<{ success: boolean; receiptNumber: string; amount: number; campaignTitle: string; message: string }> {
+    const res = await fetch('/api/mpesa/verify-manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'Failed to verify M-Pesa transaction ID');
+    }
+    return res.json();
+  },
+
+  // Initiate M-Pesa STK Push (Legacy)
   async initiateMpesaStkPush(params: {
     phoneNumber: string;
     amount: number;
