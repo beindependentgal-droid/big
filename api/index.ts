@@ -2028,7 +2028,7 @@ app.post("/api/mpesa/stkpush/simulate-confirm", (req, res) => {
           id: `monthly-${Date.now()}`,
           name: donationObj.donorName,
           amount: txn.amount,
-          avatar: "/images/african_woman_portrait_1_1784708232425.jpg",
+          avatar: "/images/african_woman_portrait.jpg",
           tier: "Gold Champion",
           joinedAt: new Date().toISOString(),
           badge: "🏆 GOLD CHAMPION"

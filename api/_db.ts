@@ -215,10 +215,10 @@ export const loadDb = (): ApplicationState => {
           .replace(/src\/assets\/images\//g, '/images/')
           .replace(/\/assets\/images\//g, '/images/')
           .replace(/assets\/images\//g, '/images/')
-          .replace(/female1\.jpg/g, 'african_woman_portrait_1_1784708232425.jpg')
-          .replace(/member-1\.png/g, 'african_woman_portrait_2_1784708246407.jpg')
-          .replace(/member-2\.png/g, 'african_woman_portrait_3_1784708258772.jpg')
-          .replace(/member-3\.png/g, 'african_woman_portrait_4_1784708270262.jpg');
+          .replace(/female1\.jpg/g, 'african_woman_portrait.jpg')
+          .replace(/member-1\.png/g, 'african_woman_portrait.jpg')
+          .replace(/member-2\.png/g, 'african_woman_portrait.jpg')
+          .replace(/member-3\.png/g, 'african_woman_portrait.jpg');
       }
 
       let parsed: any;
