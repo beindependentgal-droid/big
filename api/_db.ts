@@ -35,7 +35,9 @@ function detectWritableDir() {
   try {
     const localDir = path.dirname(LOCAL_DB_FILE);
     if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
-    fs.accessSync(localDir, fs.constants.W_OK);
+    const testFile = path.join(localDir, `.write_test_${Date.now()}`);
+    fs.writeFileSync(testFile, "1");
+    fs.unlinkSync(testFile);
     DB_WRITEABLE_DIR = localDir;
     return;
   } catch (e) {
@@ -43,7 +45,9 @@ function detectWritableDir() {
   }
 
   try {
-    fs.accessSync(os.tmpdir(), fs.constants.W_OK);
+    const testFile = path.join(os.tmpdir(), `.write_test_${Date.now()}`);
+    fs.writeFileSync(testFile, "1");
+    fs.unlinkSync(testFile);
     DB_WRITEABLE_DIR = os.tmpdir();
     return;
   } catch (e) {
@@ -231,26 +235,40 @@ export const loadDb = (): ApplicationState => {
       }
       const defaults = getInitialState();
       
-      // Seed missing hashes for initial members on startup so they have safe secure credentials
+      // Ensure default members are merged if missing, and every member has password salt & hash
+      let existingMembers = Array.isArray(parsed.members) ? parsed.members : [];
       let hashSeeded = false;
-      if (Array.isArray(parsed.members)) {
-        parsed.members = parsed.members.map((m: any) => {
-          if (!m.passwordHash) {
-            const salt = crypto.randomBytes(16).toString('hex');
-            const hash = crypto.pbkdf2Sync('Password123!', salt, 10000, 64, 'sha512').toString('hex');
-            m.passwordSalt = salt;
-            m.passwordHash = hash;
-            
-            // Set default hashed PIN as well
-            const pinSalt = crypto.randomBytes(16).toString('hex');
-            const pinHash = crypto.pbkdf2Sync('123456', pinSalt, 10000, 64, 'sha512').toString('hex');
-            m.pinSalt = pinSalt;
-            m.pinHash = pinHash;
+
+      // Merge missing initial seed members
+      if (Array.isArray(defaults.members)) {
+        for (const defaultMember of defaults.members) {
+          const found = existingMembers.find((m: any) => m.email?.toLowerCase() === defaultMember.email?.toLowerCase() || m.id === defaultMember.id);
+          if (!found) {
+            existingMembers.push(defaultMember);
             hashSeeded = true;
           }
-          return m;
-        });
+        }
       }
+
+      // Ensure every member has passwordHash and passwordSalt
+      existingMembers = existingMembers.map((m: any) => {
+        if (!m.passwordHash || !m.passwordSalt) {
+          const salt = crypto.randomBytes(16).toString('hex');
+          const hash = crypto.pbkdf2Sync('Password123!', salt, 10000, 64, 'sha512').toString('hex');
+          m.passwordSalt = salt;
+          m.passwordHash = hash;
+          
+          // Set default hashed PIN as well
+          const pinSalt = crypto.randomBytes(16).toString('hex');
+          const pinHash = crypto.pbkdf2Sync('123456', pinSalt, 10000, 64, 'sha512').toString('hex');
+          m.pinSalt = pinSalt;
+          m.pinHash = pinHash;
+          hashSeeded = true;
+        }
+        return m;
+      });
+
+      parsed.members = existingMembers;
 
       const merged = {
         ...defaults,

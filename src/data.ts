@@ -268,7 +268,53 @@ export interface Story {
 
 // Production mode - no seed data
 
-export const INITIAL_MEMBERS: Member[] = [];
+export const INITIAL_MEMBERS: Member[] = [
+  {
+    id: 'm1',
+    name: 'Amina Bello',
+    email: 'amina.bello@beindependentgal.com',
+    avatar: '/images/african_woman_portrait.jpg',
+    title: 'Fintech Founder & Tech Lead',
+    city: 'Lagos',
+    rank: 'Community Lead',
+    skills: ['Fintech', 'React', 'Financial Inclusion'],
+    interests: ['AI', 'Venture Capital', 'Mentorship'],
+    bio: 'Passionate about leveraging financial technology to empower female entrepreneurs across Africa.',
+    points: 850,
+    badges: ['confidence', 'mentor', 'pioneer'],
+    joinedAt: '2025-01-15T08:00:00.000Z'
+  },
+  {
+    id: 'm2',
+    name: 'Wanjiku Kamau',
+    email: 'wanjiku@big.org',
+    avatar: '/images/african_woman_founder_portrait.jpg',
+    title: 'AgriTech Pioneer',
+    city: 'Nairobi',
+    rank: 'Mentor',
+    skills: ['Agribusiness', 'Supply Chain', 'Leadership'],
+    interests: ['Sustainable Farming', 'E-Commerce'],
+    bio: 'Building digital supply chains connecting rural women farmers directly to urban markets.',
+    points: 1200,
+    badges: ['pioneer', 'top_contributor'],
+    joinedAt: '2025-02-01T10:00:00.000Z'
+  },
+  {
+    id: 'm3',
+    name: 'Demo Sister',
+    email: 'demo@beindependentgal.com',
+    avatar: '/images/african_woman_portrait.jpg',
+    title: 'Aspiring Entrepreneur',
+    city: 'Accra',
+    rank: 'Learner',
+    skills: ['Marketing', 'Product Strategy'],
+    interests: ['Micro-Grants', 'BIG Academy'],
+    bio: 'Excited to learn, connect, and grow with sisters in the BIG network.',
+    points: 320,
+    badges: ['confidence'],
+    joinedAt: '2025-03-10T12:00:00.000Z'
+  }
+];
 export const INITIAL_EVENTS: Event[] = [];
 export const INITIAL_CHALLENGES: Challenge[] = [];
 export const INITIAL_RESOURCES: Resource[] = [

@@ -412,6 +412,42 @@ export function AuthView({ initialMode = 'login', onAuthSuccess }: AuthViewProps
             </div>
           )}
 
+          {isLogin && (
+            <div className="bg-pink-50/80 dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/40 rounded-2xl p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-pink-800 dark:text-pink-300 flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5 text-pink-600" />
+                  Quick Demo Accounts
+                </span>
+                <span className="text-[9px] font-semibold text-pink-600 bg-pink-100 dark:bg-pink-900/50 px-2 py-0.5 rounded-full">Password: Password123!</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('wanjiku@big.org');
+                    setPassword('Password123!');
+                  }}
+                  className="text-left px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl hover:border-pink-400 transition text-xs"
+                >
+                  <p className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">Wanjiku Kamau</p>
+                  <p className="text-[9px] text-slate-500 font-mono">wanjiku@big.org</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEmail('demo@beindependentgal.com');
+                    setPassword('Password123!');
+                  }}
+                  className="text-left px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-pink-200 dark:border-pink-800 rounded-xl hover:border-pink-400 transition text-xs"
+                >
+                  <p className="font-bold text-slate-800 dark:text-slate-200 text-[11px]">Demo Sister</p>
+                  <p className="text-[9px] text-slate-500 font-mono">demo@beindependentgal.com</p>
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Email Address</label>
             <div className="relative">
