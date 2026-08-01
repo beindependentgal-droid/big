@@ -1,0 +1,3 @@
+-- 003_seed.sql
+-- No seed data - production uses real data only
+-- Database schema already created by 001_core_schema.sql and 002_rls_storage_realtime.sql

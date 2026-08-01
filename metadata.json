@@ -1,0 +1,6 @@
+{
+  "name": "Be Independent Gal",
+  "description": "A space where women rise together. Stories, circles, events, and real connections — built for the complexity of women's lives. No algorithms. No noise, just community.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
