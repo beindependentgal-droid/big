@@ -1,195 +1,78 @@
 import {
-  BookOpen,
-  Users,
-  MessageCircle,
-  Leaf,
+  ArrowRight,
+  BadgeCheck,
+  BriefcaseBusiness,
   Handshake,
-  Heart,
-  Target,
+  HeartHandshake,
+  Lightbulb,
+  Network,
+  Rocket,
+  ShieldCheck,
   Sparkles,
+  Target,
+  Users,
+  Wallet,
 } from 'lucide-react'
-import { SectionHeading } from './SectionHeading'
 import { Button } from './ui/button'
 
-const bigLooks = [
-  {
-    title: 'BIG Academy',
-    description: 'Learn practical skills that prepare you for life and work.',
-    icon: BookOpen,
-  },
-  {
-    title: 'Circles',
-    description: 'Small communities where meaningful friendships and accountability grow.',
-    icon: Users,
-  },
-  {
-    title: 'Girl Talk Friday',
-    description: 'Honest conversations that inspire, educate, and empower.',
-    icon: MessageCircle,
-  },
-  {
-    title: 'Retreats',
-    description: 'Reconnect with yourself while building lifelong friendships.',
-    icon: Leaf,
-  },
-  {
-    title: 'Networking',
-    description: 'Meet women who open doors to new opportunities.',
-    icon: Handshake,
-  },
-  {
-    title: 'Community',
-    description: 'A safe space where every woman belongs.',
-    icon: Heart,
-  },
+const pillars = [
+  { title: 'Build', icon: Lightbulb, text: 'Transform ideas into businesses, careers, and income-generating opportunities.' },
+  { title: 'Connect', icon: Network, text: 'Create trusted relationships with women, mentors, partners, investors, and customers.' },
+  { title: 'Grow', icon: Rocket, text: 'Use practical tools, accountability, and resources to scale sustainably.' },
+  { title: 'Thrive', icon: Wallet, text: 'Build financially independent women who create opportunities for others.' },
 ]
+
+const audience = ['Entrepreneurs', 'Freelancers', 'Small business owners', 'Creatives', 'Professionals', 'Digital creators', 'Startup founders', 'Skilled artisans', 'Women with side hustles']
+
+const programs = [
+  ['BIG Builders Community', 'A high-trust community where women collaborate, share opportunities, and grow together.'],
+  ['BIG Builders Academy', 'Practical learning experiences focused on building sustainable businesses and careers.'],
+  ['BIG Marketplace', 'An upcoming platform connecting customers with businesses owned by BIG members.'],
+  ['BIG Builders Summit', 'Events bringing together entrepreneurs, innovators, investors, and ecosystem partners.'],
+  ['BIG Builder Circles', 'Small accountability groups where members solve challenges together and celebrate progress.'],
+]
+
+const values = ['Build before you boast.', 'Progress over perfection.', 'Collaboration over competition.', 'Integrity in everything.', 'Continuous learning.', 'Lift as you rise.']
 
 export function AboutView({ setCurrentView }: { setCurrentView: (view: string, options?: { authMode?: 'login' | 'register' }) => void }) {
   return (
-    <div className="bg-white">
-      <section className="relative min-h-[78vh] overflow-hidden sm:min-h-[86vh]">
-        <img
-          src="/images/african_women_community_circle_1784704135356.jpg"
-          alt="African women walking together, laughing, and learning as a community"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative mx-auto flex min-h-[78vh] max-w-5xl flex-col items-center justify-center px-4 text-center text-white sm:min-h-[86vh] sm:px-6 lg:px-8">
-          <span className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-medium uppercase tracking-[0.28em] text-white/90 backdrop-blur-md sm:text-sm">
-            ✨ More Than a Community
-          </span>
-          <h1 className="mt-8 max-w-3xl text-[2.25rem] font-semibold leading-[0.95] tracking-[-0.03em] text-white sm:text-[2.9rem] lg:text-[3.8rem] xl:text-[4rem]">
-            Building Independent Women.
-            <span className="mt-4 block text-[#F7D36B]">Building an Unstoppable<br />Generation.</span>
-          </h1>
-          <p className="mx-auto mt-7 max-w-176 text-[1rem] leading-8 text-white/85 sm:text-[1.05rem]">
-            BIG (Be Independent Gal) is a movement empowering women to learn, build meaningful relationships, create opportunities, and thrive together. We believe that every woman deserves access to knowledge, community, and opportunities to build the life she dreams of.
-          </p>
-          <div className="mt-10 flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Button
-              className="w-full rounded-full bg-primary px-8 py-4 text-base font-semibold text-white shadow-[0_20px_50px_-18px_rgba(91,33,182,0.35)] transition-all duration-300 hover:-translate-y-1 sm:w-auto"
-              onClick={() => setCurrentView('auth', { authMode: 'register' })}
-            >
-              Become a BIG Member
-            </Button>
-            <Button
-              variant="outline"
-              className="w-full rounded-full border border-white/70 bg-white/10 px-8 py-4 text-base font-semibold text-white transition-all duration-300 hover:bg-white/20 sm:w-auto"
-              onClick={() => setCurrentView('feeds')}
-            >
-              Explore Our Community
-            </Button>
+    <main className="bg-background text-foreground">
+      <section className="relative overflow-hidden bg-primary px-6 py-24 text-primary-foreground sm:py-32 lg:px-10">
+        <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[1.15fr_0.85fr] lg:items-end">
+          <div>
+            <p className="mb-7 flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.24em] text-accent"><Sparkles data-icon="inline-start" /> Be Independent Gal</p>
+            <h1 className="max-w-4xl text-balance font-heading text-5xl font-semibold leading-[0.95] tracking-[-0.05em] sm:text-7xl lg:text-8xl">Building women.<br /><span className="text-accent">Building the future.</span></h1>
+            <p className="mt-8 max-w-2xl text-pretty text-lg leading-8 text-primary-foreground/75 sm:text-xl">BIG is a Kenyan community and business ecosystem for women who are building businesses, brands, careers, products, services, and communities.</p>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+              <Button onClick={() => setCurrentView('auth', { authMode: 'register' })} className="rounded-full bg-accent px-7 py-6 font-semibold text-accent-foreground hover:bg-accent/90">Join the movement <ArrowRight data-icon="inline-end" /></Button>
+              <Button onClick={() => setCurrentView('programs')} variant="outline" className="rounded-full border-primary-foreground/30 bg-transparent px-7 py-6 text-primary-foreground hover:bg-primary-foreground/10">Explore programs</Button>
+            </div>
+          </div>
+          <div className="border-l border-primary-foreground/25 pl-7 lg:mb-3">
+            <p className="font-heading text-3xl font-medium leading-tight sm:text-4xl">We are not a motivational movement.</p>
+            <p className="mt-5 text-xl font-semibold text-accent">We are a movement of builders.</p>
           </div>
         </div>
       </section>
 
-      <section className="py-24 md:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
-            <div className="relative overflow-hidden rounded-[2rem] bg-slate-100 shadow-xl">
-              <img
-                src="/images/african_women_tech_collaboration_1784664040784.jpg"
-                alt="African women networking and learning together"
-                className="h-full w-full object-cover"
-              />
-            </div>
-            <div>
-              <SectionHeading
-                align="left"
-                eyebrow="Why BIG Exists"
-                title="Every woman deserves the opportunity to thrive."
-              />
-              <p className="mt-6 max-w-[60ch] text-[1rem] leading-8 text-slate-600 sm:text-[1.05rem]">
-                Across Africa, millions of women have incredible dreams, talents, and ideas. Yet many never reach their full potential—not because they lack ability, but because they lack access to the right knowledge, meaningful relationships, mentorship, and opportunities.
-              </p>
-              <p className="mt-6 max-w-[60ch] text-[1rem] leading-8 text-slate-600 sm:text-[1.05rem]">
-                BIG was created to change that. We believe no woman should have to build her future alone.
-              </p>
-              <p className="mt-6 max-w-[60ch] text-[1rem] leading-8 text-slate-600 sm:text-[1.05rem]">
-                BIG is a home where women learn practical skills, connect with inspiring people, discover opportunities, support one another, and grow into confident, independent leaders.
-              </p>
-              <p className="mt-6 max-w-[60ch] text-[1rem] leading-8 text-slate-600 sm:text-[1.05rem]">
-                Because when one woman rises, she inspires countless others to rise with her.
-              </p>
-            </div>
-          </div>
+      <section className="px-6 py-20 lg:px-10 lg:py-28">
+        <div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[0.8fr_1.2fr]">
+          <div><p className="text-sm font-bold uppercase tracking-[0.2em] text-secondary">About BIG</p><h2 className="mt-4 text-balance font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Independence is built — not given.</h2></div>
+          <div className="flex flex-col gap-6 text-lg leading-8 text-muted-foreground"><p>Africa&apos;s future will not be shaped by those waiting for opportunities. It will be built by women who create them.</p><p>BIG exists to equip, connect, and accelerate women through practical opportunities, meaningful relationships, resources, and accountability.</p><p>Our success is measured by the progress our members make — not by the number of workshops we conduct.</p></div>
         </div>
       </section>
 
-      <section className="bg-[#F8FAFC] py-24 md:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            eyebrow="The BIG Framework"
-            title="Learn. Connect. Earn. Thrive."
-            subtitle="Four powerful steps that create confidence, community, opportunity, and lasting impact."
-          />
-          <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/95 p-8 text-center shadow-[0_16px_45px_-24px_rgba(15,23,42,0.12)] transition duration-300 hover:-translate-y-1 hover:bg-[#f8f5ff] hover:shadow-[0_24px_70px_-30px_rgba(15,23,42,0.16)] md:p-10">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary-50 text-secondary">
-                <BookOpen className="h-6 w-6" />
-              </div>
-              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.28em] text-[#5B21B6]">Learn</p>
-              <h3 className="mt-3 text-[1.15rem] font-semibold leading-[1.3] text-slate-900 sm:text-[1.25rem]">Knowledge creates confidence.</h3>
-              <p className="mt-4 text-[0.95rem] leading-7 text-slate-600">
-                Acquire practical skills, business knowledge, leadership, financial literacy, and personal development that prepare you for real life.
-              </p>
-            </div>
-            <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/95 p-8 text-center shadow-[0_16px_45px_-24px_rgba(15,23,42,0.12)] transition duration-300 hover:-translate-y-1 hover:bg-[#f8f5ff] hover:shadow-[0_24px_70px_-30px_rgba(15,23,42,0.16)] md:p-10">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-[#ede9fe] to-[#fdf2f8] text-[#5B21B6]">
-                <Users className="h-6 w-6" />
-              </div>
-              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.28em] text-[#5B21B6]">Connect</p>
-              <h3 className="mt-3 text-[1.15rem] font-semibold leading-[1.3] text-slate-900 sm:text-[1.25rem]">Relationships create opportunities.</h3>
-              <p className="mt-4 text-[0.95rem] leading-7 text-slate-600">
-                Meet mentors, friends, professionals, entrepreneurs, and collaborators who help you grow personally and professionally.
-              </p>
-            </div>
-            <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/95 p-8 text-center shadow-[0_16px_45px_-24px_rgba(15,23,42,0.12)] transition duration-300 hover:-translate-y-1 hover:bg-[#f8f5ff] hover:shadow-[0_24px_70px_-30px_rgba(15,23,42,0.16)] md:p-10">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-[#ede9fe] to-[#fdf2f8] text-[#5B21B6]">
-                <Handshake className="h-6 w-6" />
-              </div>
-              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.28em] text-[#5B21B6]">Earn</p>
-              <h3 className="mt-3 text-[1.15rem] font-semibold leading-[1.3] text-slate-900 sm:text-[1.25rem]">Opportunities create independence.</h3>
-              <p className="mt-4 text-[0.95rem] leading-7 text-slate-600">
-                Turn your skills into businesses, careers, partnerships, income, and sustainable opportunities.
-              </p>
-            </div>
-            <div className="rounded-[1.75rem] border border-slate-200/70 bg-white/95 p-8 text-center shadow-[0_16px_45px_-24px_rgba(15,23,42,0.12)] transition duration-300 hover:-translate-y-1 hover:bg-[#f8f5ff] hover:shadow-[0_24px_70px_-30px_rgba(15,23,42,0.16)] md:p-10">
-              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-linear-to-br from-[#ede9fe] to-[#fdf2f8] text-[#5B21B6]">
-                <Leaf className="h-6 w-6" />
-              </div>
-              <p className="mt-6 text-[11px] font-medium uppercase tracking-[0.28em] text-[#5B21B6]">Thrive</p>
-              <h3 className="mt-3 text-[1.15rem] font-semibold leading-[1.3] text-slate-900 sm:text-[1.25rem]">Success is better together.</h3>
-              <p className="mt-4 text-[0.95rem] leading-7 text-slate-600">
-                Build a fulfilling life, create impact in your community, and empower other women to begin their own journey.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <section className="bg-muted/40 px-6 py-20 lg:px-10 lg:py-28"><div className="mx-auto max-w-7xl"><div className="grid gap-6 md:grid-cols-2"><article className="rounded-3xl bg-card p-8 shadow-sm sm:p-10"><Target className="text-secondary" /><p className="mt-8 text-sm font-bold uppercase tracking-[0.2em] text-secondary">Our vision</p><h2 className="mt-3 font-heading text-3xl font-semibold">To build Africa&apos;s largest community of women builders creating sustainable businesses, wealth, and lasting impact.</h2></article><article className="rounded-3xl bg-primary p-8 text-primary-foreground shadow-sm sm:p-10"><BadgeCheck className="text-accent" /><p className="mt-8 text-sm font-bold uppercase tracking-[0.2em] text-accent">Our mission</p><h2 className="mt-3 font-heading text-3xl font-semibold">Equip, connect, and accelerate women building businesses and careers.</h2><p className="mt-5 leading-7 text-primary-foreground/70">We create opportunities that increase income, strengthen businesses, and build long-term economic independence.</p></article></div></div></section>
 
-      <section className="py-24 md:py-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionHeading
-            eyebrow="What BIG Looks Like"
-            title="The experiences that bring this movement to life."
-          />
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {bigLooks.map((item) => {
-              const Icon = item.icon
-              return (
-                <div key={item.title} className="rounded-[1.75rem] border border-slate-200/70 bg-white/95 p-7 shadow-[0_16px_45px_-22px_rgba(15,23,42,0.1)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_60px_-24px_rgba(15,23,42,0.14)] md:p-8">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-secondary-50 text-secondary">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="mt-5 text-[1.1rem] font-semibold leading-[1.3] text-slate-900">{item.title}</h3>
-                  <p className="mt-3 text-[0.95rem] leading-7 text-slate-600">{item.description}</p>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-    </div>
+      <section className="px-6 py-20 lg:px-10 lg:py-28"><div className="mx-auto max-w-7xl"><div className="max-w-2xl"><p className="text-sm font-bold uppercase tracking-[0.2em] text-secondary">The BIG framework</p><h2 className="mt-4 font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Practical progress, together.</h2><p className="mt-5 text-lg leading-8 text-muted-foreground">Most organizations teach. BIG helps women build through accountability, collaboration, business growth, opportunity sharing, market access, and strategic partnerships.</p></div><div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{pillars.map(({ title, icon: Icon, text }) => <article key={title} className="border-t-4 border-secondary bg-card p-7 shadow-sm"><Icon className="text-secondary" /><h3 className="mt-8 font-heading text-2xl font-semibold">{title}</h3><p className="mt-3 leading-7 text-muted-foreground">{text}</p></article>)}</div></div></section>
+
+      <section className="bg-primary px-6 py-20 text-primary-foreground lg:px-10 lg:py-28"><div className="mx-auto grid max-w-7xl gap-12 lg:grid-cols-2"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-accent">Who we serve</p><h2 className="mt-4 font-heading text-4xl font-semibold sm:text-5xl">Women who are actively building something.</h2></div><div className="flex flex-wrap content-start gap-3">{audience.map((item) => <span key={item} className="rounded-full border border-primary-foreground/25 px-4 py-3 text-sm text-primary-foreground/85">{item}</span>)}</div></div></section>
+
+      <section className="px-6 py-20 lg:px-10 lg:py-28"><div className="mx-auto max-w-7xl"><div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-secondary">Our programs</p><h2 className="mt-4 font-heading text-4xl font-semibold sm:text-5xl">Where building becomes visible.</h2></div><BriefcaseBusiness className="hidden text-secondary sm:block" size={42} /></div><div className="mt-12 grid gap-x-10 gap-y-0 md:grid-cols-2">{programs.map(([title, text], index) => <article key={title} className="flex gap-5 border-t py-7"><span className="font-mono text-sm text-secondary">0{index + 1}</span><div><h3 className="font-heading text-xl font-semibold">{title}</h3><p className="mt-2 leading-7 text-muted-foreground">{text}</p></div></article>)}</div></div></section>
+
+      <section className="bg-muted/40 px-6 py-20 lg:px-10 lg:py-28"><div className="mx-auto grid max-w-7xl gap-14 lg:grid-cols-2"><div><p className="text-sm font-bold uppercase tracking-[0.2em] text-secondary">Our values</p><h2 className="mt-4 font-heading text-4xl font-semibold sm:text-5xl">The way we build matters.</h2></div><ul className="grid gap-4 sm:grid-cols-2">{values.map((value) => <li key={value} className="flex items-start gap-3 border-b pb-4 text-lg"><HeartHandshake className="mt-1 shrink-0 text-secondary" />{value}</li>)}</ul></div></section>
+
+      <section className="px-6 py-24 lg:px-10"><div className="mx-auto flex max-w-5xl flex-col items-center text-center"><ShieldCheck className="text-secondary" size={42} /><h2 className="mt-6 max-w-3xl text-balance font-heading text-4xl font-semibold tracking-tight sm:text-6xl">Too many talented women remain unseen.</h2><p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">Not because they lack ability, but because they lack access to opportunities, trusted networks, strategic support, and the right environment to grow. BIG exists to close that gap.</p><Button onClick={() => setCurrentView('auth', { authMode: 'register' })} className="mt-9 rounded-full bg-secondary px-8 py-6 text-secondary-foreground hover:bg-secondary/90">Start building with BIG <ArrowRight data-icon="inline-end" /></Button></div></section>
+    </main>
   )
 }
