@@ -62,6 +62,7 @@ import { Sparkles, Award, X, Database, CheckCircle2, AlertTriangle, Copy, FileTe
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConfigured, supabaseService, areTablesMissing } from './supabase';
 import { apiService } from './api';
+import { supabaseBrowser } from '../supabase/client';
 import { copyToClipboard } from './lib/utils';
 
 const appViewFallback = (
@@ -128,6 +129,38 @@ export default function App() {
 
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [sessionExpiredAlert, setSessionExpiredAlert] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!supabaseBrowser) return;
+    let active = true;
+    const syncSession = async () => {
+      const { data } = await supabaseBrowser.auth.getSession();
+      if (!active || !data.session?.user) return;
+      const user = data.session.user;
+      localStorage.setItem('big_v2_session_token', data.session.access_token);
+      localStorage.setItem('big_v2_current_user_email', user.email || '');
+      localStorage.setItem('big_v2_current_user_id', user.id);
+      localStorage.setItem('big_v2_is_auth', 'true');
+      setIsAuthenticated(true);
+      setCurrentUserId(user.id);
+      setCurrentView('feeds');
+    };
+    void syncSession();
+    const { data: listener } = supabaseBrowser.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) return;
+      localStorage.setItem('big_v2_session_token', session.access_token);
+      localStorage.setItem('big_v2_current_user_email', session.user.email || '');
+      localStorage.setItem('big_v2_current_user_id', session.user.id);
+      localStorage.setItem('big_v2_is_auth', 'true');
+      setIsAuthenticated(true);
+      setCurrentUserId(session.user.id);
+      setCurrentView('feeds');
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   // Session Inactivity Timeout Watcher
   useEffect(() => {

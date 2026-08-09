@@ -3,6 +3,7 @@ import { ArrowRight, Mail, Lock, User, Sparkles, Fingerprint, AlertCircle } from
 import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 import { BiometricModal } from './BiometricModal';
 import { apiService } from '../api';
+import { signInWithGoogle } from '../../supabase/auth';
 
 interface AuthViewProps {
   defaultMode?: 'login' | 'register';
@@ -81,6 +82,8 @@ export function AuthView({ defaultMode = 'login', onAuthSuccess }: AuthViewProps
         const { token, user } = await apiService.login(normalizedEmail, password);
         localStorage.setItem('big_v2_session_token', token);
         localStorage.setItem('big_v2_current_user_email', normalizedEmail);
+        localStorage.setItem('big_v2_current_user_id', user.id);
+        localStorage.setItem('big_v2_is_auth', 'true');
         onAuthSuccess(false, user.name, user.email || normalizedEmail);
       } else {
         if (enrollBiometrics) {
@@ -88,13 +91,15 @@ export function AuthView({ defaultMode = 'login', onAuthSuccess }: AuthViewProps
           setBioModalOpen(true);
         } else {
           const { token, user } = await apiService.register(name, normalizedEmail, password);
+          if (!token) {
+            setSuccess(`Account created. Check ${normalizedEmail} to confirm your email, then sign in.`);
+            setIsLogin(true);
+            return;
+          }
           localStorage.setItem('big_v2_session_token', token);
           localStorage.setItem('big_v2_current_user_email', normalizedEmail);
-          
-          // Show success message about welcome email
-          setSuccess(`🎉 Welcome to BIG, ${name}! A welcome email has been sent to ${normalizedEmail}. Check your inbox!`);
-          
-          // Small delay to show the message before navigating
+          localStorage.setItem('big_v2_is_auth', 'true');
+          setSuccess(`Welcome to BIG, ${name}. Your builder profile is ready.`);
           setTimeout(() => {
             onAuthSuccess(true, user.name, user.email || normalizedEmail);
           }, 1500);
@@ -170,19 +175,12 @@ export function AuthView({ defaultMode = 'login', onAuthSuccess }: AuthViewProps
     setSuccess(null);
     setLoading(true);
     try {
-      const data = await apiService.getGoogleAuthUrl(window.location.origin);
-      const authWindow = window.open(
-        data.url,
-        'google_oauth_popup',
-        'width=500,height=600'
-      );
-
-      if (!authWindow) {
-        alert('Please allow popups for this site to sign in with Google.');
-      }
+      const { error } = await signInWithGoogle();
+      if (error) throw error;
     } catch (err: any) {
-      setError(err.message || 'Google Sign-In failed');
-    } finally {
+      setError(/provider|not enabled|configuration/i.test(err.message || '')
+        ? 'Google sign-in is not enabled for this Supabase project yet.'
+        : 'Google sign-in could not start. Please try again.');
       setLoading(false);
     }
   };

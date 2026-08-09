@@ -13,6 +13,8 @@ import {
   ImpactStory,
 } from "./data";
 import { AcademyProgressState } from "./lib/stateHelpers";
+import { supabaseBrowser } from "../supabase/client";
+import { signInWithEmail, signUpWithEmail } from "../supabase/auth";
 
 const API_BASE_URL = (
   (import.meta.env.VITE_API_BASE_URL as string) || ""
@@ -332,6 +334,13 @@ export const apiService = {
     password: string,
     biometricCredentialId?: string,
   ): Promise<{ token: string; user: Member }> {
+    if (supabaseBrowser) {
+      const { data, error } = await signUpWithEmail(email.trim().toLowerCase(), password, { full_name: name });
+      if (error) throw new Error(error.message);
+      const user = localAuthUser(name, data.user?.email || email);
+      if (data.user) user.id = data.user.id;
+      return { token: data.session?.access_token || "", user };
+    }
     try {
       const res = await fetch(buildApiUrl("/api/auth/register"), {
         method: "POST",
@@ -406,6 +415,20 @@ export const apiService = {
     email: string,
     password: string,
   ): Promise<{ token: string; user: Member }> {
+    if (supabaseBrowser) {
+      const { data, error } = await signInWithEmail(email.trim().toLowerCase(), password);
+      if (error) {
+        if (/invalid login credentials/i.test(error.message)) throw new Error("Invalid email or password");
+        throw new Error(error.message);
+      }
+      if (!data.session?.access_token || !data.user) throw new Error("Sign-in did not create a session. Please try again.");
+      const user = localAuthUser(
+        data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "BIG Builder",
+        data.user.email || email,
+      );
+      user.id = data.user.id;
+      return { token: data.session.access_token, user };
+    }
     try {
       const res = await fetch(buildApiUrl("/api/auth/login"), {
         method: "POST",
