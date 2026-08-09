@@ -40,7 +40,7 @@ export const PUBLIC_LINKS: NavLink[] = [
   { id: 'about', label: 'About', icon: Sparkles },
   { id: 'academy', label: 'Academy', icon: GraduationCap },
   { id: 'circles', label: 'Circles', icon: Compass },
-  { id: 'directory', label: 'Opportunities', icon: Briefcase },
+  { id: 'directory', label: 'Find opportunities', icon: Briefcase },
   { id: 'programs', label: 'Programs', icon: Award },
   { id: 'big-fund', label: 'BIG Fund', icon: Trophy },
   { id: 'contact', label: 'Contact', icon: MessageSquare }
@@ -48,7 +48,7 @@ export const PUBLIC_LINKS: NavLink[] = [
 
 export const PRIVATE_LINKS: NavLink[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'feeds', label: 'Community', icon: Users },
+  { id: 'feeds', label: 'Builders community', icon: Users },
   { id: 'circles', label: 'Circles', icon: Compass },
   { id: 'directory', label: 'Directory', icon: Briefcase }
 ];
@@ -58,7 +58,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
     title: 'Core Platform',
     links: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'feeds', label: 'Community', icon: Users },
+      { id: 'feeds', label: 'Builders community', icon: Users },
       { id: 'circles', label: 'Circles Hub', icon: Compass },
       { id: 'messages', label: 'Messages', icon: MessageSquare, badge: true },
     ]
@@ -74,7 +74,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
   {
     title: 'Engagement',
     links: [
-      { id: 'job-board', label: 'Job Board', icon: Briefcase },
+      { id: 'job-board', label: 'Work opportunities', icon: Briefcase },
       { id: 'mentorship', label: 'Mentorship', icon: HeartHandshake },
       { id: 'goal-tracker', label: 'Goal Tracker', icon: Target },
       { id: 'directory', label: 'Directory', icon: Users },
@@ -91,7 +91,7 @@ export const NAVIGATION_CATEGORIES: NavCategory[] = [
 ];
 
 export const BOTTOM_NAV_LINKS: NavLink[] = [
-  { id: 'feeds', label: 'Community', icon: Users },
+  { id: 'feeds', label: 'Builders community', icon: Users },
   { id: 'circles', label: 'Circles', icon: Compass },
   { id: 'my-sisters', label: 'My Sisters', icon: UserCheck },
   { id: 'messages', label: 'Messages', icon: MessageSquare },

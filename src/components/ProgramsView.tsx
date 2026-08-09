@@ -42,11 +42,11 @@ export function ProgramsView({ setCurrentView }: ProgramsViewProps) {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-flex items-center gap-2 rounded-full border border-primary/10 bg-primary/5 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary mb-4">
-            Curated Pathways
+            Practical pathways
           </span>
           <SectionHeading
-            title="Our Growth Programs"
-            description="High-impact learning, mentorship, and business development cohorts built to guide women toward financial and personal sovereignty."
+            title="Programs for women building"
+            description="Practical learning, mentorship, and business support for women building sustainable income and long-term independence."
           />
         </div>
 
@@ -82,7 +82,7 @@ export function ProgramsView({ setCurrentView }: ProgramsViewProps) {
                     Cohort Applications Open
                   </span>
                   <span className="inline-flex items-center gap-1.5 text-xs font-bold text-secondary group-hover:translate-x-1 transition-transform">
-                    Apply to Join <ArrowRight className="h-4 w-4" />
+                    Start building with us <ArrowRight className="h-4 w-4" />
                   </span>
                 </div>
               </div>

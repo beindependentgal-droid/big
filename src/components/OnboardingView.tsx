@@ -68,7 +68,7 @@ export function OnboardingView({ onComplete }: OnboardingViewProps) {
                   <MapPin className="h-8 w-8" />
                 </div>
                 <h3 className="text-2xl font-bold text-primary dark:text-primary-foreground">Where are you building from?</h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Connecting you with sisters in your region.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Connecting you with builders and opportunities in your region.</p>
               </div>
 
               <div className="space-y-4 max-w-md mx-auto">
@@ -230,7 +230,7 @@ export function OnboardingView({ onComplete }: OnboardingViewProps) {
               disabled={step === 1 && (!formData.city || !formData.title)}
               className="group flex items-center gap-2 rounded-full bg-primary px-8 py-3.5 text-sm font-black uppercase tracking-wider text-white transition-all hover:bg-primary/95 shadow-md shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span>{step === 4 ? 'Enter Sisterhood' : 'Next Step'}</span>
+              <span>{step === 4 ? 'Enter BIG' : 'Next Step'}</span>
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </button>
           </div>
