@@ -1,6 +1,6 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import App from './App.tsx';
+import { ComingSoonPage } from './components/ComingSoonPage';
 import './index.css';
 
 // 1. Startup LocalStorage Migration: Run once to clean old legacy values permanently in client browser
@@ -124,7 +124,7 @@ window.addEventListener('error', (e) => {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ComingSoonPage />
   </StrictMode>,
 );
 
