@@ -4,6 +4,12 @@ export function ComingSoonPage() {
   return (
     <main className="relative flex min-h-screen overflow-hidden bg-[#17102b] text-white">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <img
+          src="/images/african_women_community.jpg"
+          alt=""
+          className="absolute inset-0 size-full object-cover object-center opacity-25"
+        />
+        <div className="absolute inset-0 bg-[#17102b]/75" />
         <div className="absolute -right-40 -top-40 size-[34rem] rounded-full bg-fuchsia-600/20 blur-[120px]" />
         <div className="absolute -bottom-48 -left-32 size-[34rem] rounded-full bg-orange-500/15 blur-[130px]" />
         <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,.15)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.15)_1px,transparent_1px)] [background-size:72px_72px]" />
