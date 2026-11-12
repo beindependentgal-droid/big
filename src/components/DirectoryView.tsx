@@ -734,12 +734,12 @@ export function DirectoryView({
                 type="text"
                 placeholder={
                   searchField === 'all' 
-                    ? "Search sisters by name, title, skills, or city..." 
+                    ? "Search builders by name, title, skills, or city..." 
                     : searchField === 'name' 
-                    ? "Search sisters by name..." 
+                    ? "Search builders by name..." 
                     : searchField === 'skill' 
-                    ? "Search sisters by core skills (e.g. 'Finance', 'React')..." 
-                    : "Search sisters by city or location (e.g. 'London', 'Berlin')..."
+                    ? "Search builders by core skills (e.g. 'Finance', 'React')..." 
+                    : "Search builders by city or location (e.g. 'London', 'Berlin')..."
                 }
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -902,7 +902,7 @@ export function DirectoryView({
       {/* MEMBERS DIRECTORY GRID */}
       {filteredMembers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-slate-200 p-12 text-center text-slate-500">
-          <p className="text-sm font-semibold">No sisters found matching those search criteria.</p>
+          <p className="text-sm font-semibold">No builders found matching those search criteria.</p>
           <p className="text-xs text-slate-400 mt-1">Try expanding your search query, or resetting filters.</p>
         </div>
       ) : (

@@ -614,7 +614,7 @@ export function SettingsView({ currentUser, onSaveProfile, addPoints }: Settings
                             </span>
                           )}
                         </div>
-                        <p className="text-xs font-medium text-slate-400">Add a professional face photo to increase direct trust within the Sisterhood. Drag-drop or browse.</p>
+                        <p className="text-xs font-medium text-slate-400">Add a clear profile photo so other builders know who they are connecting with. Drag, drop, or browse.</p>
                         
                         <div className="flex flex-wrap gap-2 justify-center md:justify-start pt-1">
                           <button 

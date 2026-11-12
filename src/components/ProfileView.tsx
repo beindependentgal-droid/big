@@ -758,7 +758,7 @@ export function ProfileView({
                <div className="relative z-10 space-y-8">
                   <div className="flex items-center gap-3">
                     <Calendar className="h-5 w-5 text-accent" />
-                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Sisterhood Journey</h3>
+                    <h3 className="text-sm font-black uppercase tracking-widest text-white">Builder progress</h3>
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-8">
@@ -1037,7 +1037,7 @@ export function ProfileView({
               Refine Your Sisterhood Presence
             </h1>
             <p className="mt-2 text-xs text-white/70 max-w-xl">
-              Upload a beautiful photo and describe your business milestones so mentors and fellow independent girls can discover, support, and collaborate with you.
+              Add a clear photo and describe what you are building so mentors and fellow builders can find, support, and collaborate with you.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl bg-white/10 px-4 py-3 shrink-0 backdrop-blur-md border border-white/10">
@@ -1271,7 +1271,7 @@ export function ProfileView({
               {currentUser.rank || 'Learner'} Rank
             </div>
             <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">
-              Unlock the <strong>Member</strong> and <strong>Mentor</strong> ranks by earning points through interactive workshops and connecting with sisters.
+              Build your <strong>Member</strong> and <strong>Mentor</strong> profile through useful contributions, learning, and connection.
             </p>
           </div>
         </div>

@@ -19,16 +19,16 @@ export function Footer({ setCurrentView, isAuthenticated = false }: FooterProps)
         {!isAuthenticated && (
           <div className="text-center pb-12 border-b border-slate-100 dark:border-slate-800">
             <h2 className="text-2xl sm:text-3xl font-heading font-black text-primary dark:text-primary-foreground uppercase tracking-tight">
-              Ready to Join the Movement?
+              Ready to start building?
             </h2>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-xl mx-auto">
-              Become part of a community of ambitious women building independent, purpose-driven futures together.
+              Join a community of women building businesses, careers, and lasting independence together.
             </p>
             <button
               onClick={() => setCurrentView('auth', { authMode: 'register' })}
               className="mt-6 rounded-full bg-primary px-8 py-3.5 text-xs font-black uppercase tracking-widest text-white hover:bg-secondary transition-colors shadow-lg cursor-pointer"
             >
-              Join the Sisterhood
+              Join BIG
             </button>
           </div>
         )}

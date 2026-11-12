@@ -211,7 +211,7 @@ export function SearchView({
           <div>
             <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
-              Trending in the Sisterhood
+              Trending among builders
             </h3>
             <div className="flex flex-wrap gap-3">
               {trendingTopics.map((topic) => (
@@ -233,8 +233,8 @@ export function SearchView({
               className="p-8 rounded-[2rem] bg-violet-50 border border-violet-100 cursor-pointer group hover:shadow-xl transition-all"
             >
               <Users className="h-8 w-8 text-violet-600 mb-4" />
-              <h4 className="text-sm font-black text-primary uppercase tracking-tight">Discover Sisters</h4>
-              <p className="text-[10px] font-medium text-slate-500 mt-2">Browse the directory of female founders and creators.</p>
+              <h4 className="text-sm font-black text-primary uppercase tracking-tight">Find builders</h4>
+              <p className="text-[10px] font-medium text-slate-500 mt-2">Find women building businesses, careers, and creative work.</p>
             </div>
             <div 
               onClick={() => onOpenResourceLibrary?.()}
@@ -249,7 +249,7 @@ export function SearchView({
               className="p-8 rounded-[2rem] bg-amber-50 border border-amber-100 cursor-pointer group hover:shadow-xl transition-all"
             >
               <Calendar className="h-8 w-8 text-amber-600 mb-4" />
-              <h4 className="text-sm font-black text-primary uppercase tracking-tight">Global Calendar</h4>
+              <h4 className="text-sm font-black text-primary uppercase tracking-tight">Builder calendar</h4>
               <p className="text-[10px] font-medium text-slate-500 mt-2">Join live workshops and local meetups.</p>
             </div>
           </div>

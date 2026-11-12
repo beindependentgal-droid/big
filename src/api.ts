@@ -13,6 +13,8 @@ import {
   ImpactStory,
 } from "./data";
 import { AcademyProgressState } from "./lib/stateHelpers";
+import { supabaseBrowser } from "../supabase/client";
+import { signInWithEmail, signUpWithEmail } from "../supabase/auth";
 
 const API_BASE_URL = (
   (import.meta.env.VITE_API_BASE_URL as string) || ""
@@ -117,6 +119,63 @@ function clearStoredSession(): void {
   localStorage.removeItem("big_v2_current_user_email");
   localStorage.removeItem("big_v2_current_user_id");
   localStorage.setItem("big_v2_is_auth", "false");
+}
+
+function isNetworkFailure(error: unknown): boolean {
+  return error instanceof TypeError || (error instanceof Error && /fetch|network|failed to connect|unexpected response|empty response|econnrefused/i.test(error.message));
+}
+
+async function localAuthHash(value: string): Promise<string> {
+  const bytes = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function localAuthToken(user: Member): string {
+  return `local.${btoa(JSON.stringify({ userId: user.id, email: user.email, exp: Date.now() + 86400000 }))}`;
+}
+
+function localAuthUser(name: string, email: string): Member {
+  return {
+    id: `local-${email.replace(/[^a-z0-9]/gi, "-")}`,
+    name,
+    email,
+    avatar: "/images/african_woman_portrait_1_1784708232425.jpg",
+    title: "Builder",
+    city: "",
+    rank: "Learner",
+    skills: [],
+    interests: [],
+    bio: "",
+    points: 0,
+    badges: [],
+    followingIds: [],
+    followerIds: [],
+    followerCount: 0,
+    followingCount: 0,
+    circleIds: [],
+    isSuperAdmin: false,
+    isModerator: false,
+    joinedAt: new Date().toISOString(),
+  } as Member;
+}
+
+async function localRegister(name: string, email: string, password: string) {
+  const accounts = JSON.parse(localStorage.getItem("big_local_auth_accounts") || "{}");
+  if (accounts[email]) throw new Error("A user with that email already exists.");
+  const user = localAuthUser(name, email);
+  accounts[email] = { user, passwordHash: await localAuthHash(password) };
+  localStorage.setItem("big_local_auth_accounts", JSON.stringify(accounts));
+  return { token: localAuthToken(user), user };
+}
+
+async function localLogin(email: string, password: string) {
+  const accounts = JSON.parse(localStorage.getItem("big_local_auth_accounts") || "{}");
+  const account = accounts[email];
+  if (!account || account.passwordHash !== await localAuthHash(password)) {
+    throw new Error("Invalid email or password");
+  }
+  return { token: localAuthToken(account.user), user: account.user as Member };
 }
 
 export const apiService = {
@@ -275,18 +334,30 @@ export const apiService = {
     password: string,
     biometricCredentialId?: string,
   ): Promise<{ token: string; user: Member }> {
-    const res = await fetch(buildApiUrl("/api/auth/register"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, biometricCredentialId }),
-    });
-    if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(
-        () => ({}) as { error?: string },
-      );
-      throw new Error(err.error || "Registration failed");
+    if (supabaseBrowser) {
+      const { data, error } = await signUpWithEmail(email.trim().toLowerCase(), password, { full_name: name });
+      if (error) throw new Error(error.message);
+      const user = localAuthUser(name, data.user?.email || email);
+      if (data.user) user.id = data.user.id;
+      return { token: data.session?.access_token || "", user };
     }
-    return parseApiResponseBody<{ token: string; user: Member }>(res);
+    try {
+      const res = await fetch(buildApiUrl("/api/auth/register"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, biometricCredentialId }),
+      });
+      if (!res.ok) {
+        const err = await parseApiResponseBody<{ error?: string }>(res).catch(
+          () => ({}) as { error?: string },
+        );
+        throw new Error(err.error || "Registration failed");
+      }
+      return parseApiResponseBody<{ token: string; user: Member }>(res);
+    } catch (error) {
+      if (!isNetworkFailure(error)) throw error;
+      return localRegister(name, email.trim().toLowerCase(), password);
+    }
   },
 
   // Enroll biometrics for an already-authenticated session
@@ -344,18 +415,37 @@ export const apiService = {
     email: string,
     password: string,
   ): Promise<{ token: string; user: Member }> {
-    const res = await fetch(buildApiUrl("/api/auth/login"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!res.ok) {
-      const err = await parseApiResponseBody<{ error?: string }>(res).catch(
-        () => ({}) as { error?: string },
+    if (supabaseBrowser) {
+      const { data, error } = await signInWithEmail(email.trim().toLowerCase(), password);
+      if (error) {
+        if (/invalid login credentials/i.test(error.message)) throw new Error("Invalid email or password");
+        throw new Error(error.message);
+      }
+      if (!data.session?.access_token || !data.user) throw new Error("Sign-in did not create a session. Please try again.");
+      const user = localAuthUser(
+        data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "BIG Builder",
+        data.user.email || email,
       );
-      throw new Error(err.error || "Login failed");
+      user.id = data.user.id;
+      return { token: data.session.access_token, user };
     }
-    return parseApiResponseBody<{ token: string; user: Member }>(res);
+    try {
+      const res = await fetch(buildApiUrl("/api/auth/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        const err = await parseApiResponseBody<{ error?: string }>(res).catch(
+          () => ({}) as { error?: string },
+        );
+        throw new Error(err.error || "Login failed");
+      }
+      return parseApiResponseBody<{ token: string; user: Member }>(res);
+    } catch (error) {
+      if (!isNetworkFailure(error)) throw error;
+      return localLogin(email.trim().toLowerCase(), password);
+    }
   },
 
   // Verify stored session token

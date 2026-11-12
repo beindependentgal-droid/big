@@ -25,20 +25,20 @@ const slides = [
   {
     image: '/images/african_women_tech_collaboration_1784664040784.jpg',
     alt: 'Diverse African women collaborating in a modern tech office',
-    title: 'Be Independent.',
-    subtitle: 'Be Unstoppable.'
+    title: 'Build your independence.',
+    subtitle: 'Build what matters.'
   },
   {
     image: '/images/african_women_community_circle_1784704135356.jpg',
     alt: 'African women supporting one another in an uplifting community setting',
-    title: 'Rising Together,',
-    subtitle: 'Every Single Day.'
+    title: 'Build together,',
+    subtitle: 'With practical support.'
   },
   {
     image: '/images/african_woman_entrepreneur_portrait_1784664054544.jpg',
     alt: 'Confident African woman entrepreneur in her workspace',
-    title: 'Unlock Your Vision.',
-    subtitle: 'Build Your Business.'
+    title: 'Turn your vision into progress.',
+    subtitle: 'Move your work forward.'
   }
 ];
 
@@ -46,7 +46,7 @@ const trustItems = [
   {
     icon: Users,
     title: 'Growing community of women',
-    description: 'Real sisters, real stories, and rising together every day across East & West Africa.',
+    description: 'Real builders, useful stories, and practical progress across East and West Africa.',
   },
   {
     icon: BookOpen,
@@ -115,7 +115,7 @@ const communityPosts = [
   {
     image: '/images/african_women_mentorship_discussion_1784664078314.jpg',
     title: 'Mentorship that moves things',
-    desc: 'Experienced industry leaders guiding younger sisters with complete clarity, strategy, and heart.',
+    desc: 'Experienced leaders offering clear strategy, useful feedback, and grounded support.',
   },
   {
     image: '/images/african_woman_leading_masterclass_1784704151649.jpg',
@@ -202,7 +202,7 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
             </div>
 
             <p className="text-base md:text-xl text-slate-600 dark:text-slate-400 max-w-xl leading-relaxed">
-              A space where ambitious women rise together. Circles, masterclasses, and real connections built for the complexity of your journey.
+              A Kenyan community for women building businesses, careers, products, services, and communities—with practical support for the work ahead.
             </p>
 
             <div className="flex flex-wrap gap-4 pt-4">
@@ -259,10 +259,10 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
         <div className="rounded-3xl bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-2xl shadow-slate-200/50 dark:shadow-black/50 border border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 animate-slide-up">
           <div className="text-center md:text-left space-y-2">
             <h2 className="text-xl sm:text-2xl font-heading font-black text-primary dark:text-primary-foreground uppercase tracking-tight">
-              Ready to find your tribe?
+              Ready to build with others?
             </h2>
             <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-              Jump into the core platform features and start growing with sisters today.
+              Find the community, tools, and opportunities that help you move your work forward.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full md:w-auto">
@@ -309,14 +309,14 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
                 Who We Are
               </p>
               <h2 className="mt-1 sm:mt-2 text-2xl sm:text-3xl font-heading font-bold text-primary dark:text-primary-foreground lg:text-4xl leading-tight">
-                A grassroots movement of women building independent futures
+                A community of women building independent futures
               </h2>
             </div>
             <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 sm:text-base">
-              Be Independent Gal (BIG) is Africa's premium community and growth accelerator created specifically to inspire and equip women to build financially autonomous, emotionally resilient lives.
+              Be Independent Gal (BIG) is a Kenyan community and business ecosystem for women building businesses, careers, products, services, and communities.
             </p>
             <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 sm:text-base">
-              By combining high-quality practical masterclasses, automatic mentor matching, in-person and digital circles, and active career opportunities, we empower sisters to step into their ultimate potential.
+              We connect builders to practical learning, trusted relationships, accountability, and opportunities that increase income and strengthen businesses.
             </p>
             <div className="pt-2 sm:pt-4">
               <button
@@ -386,7 +386,7 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
                 Member Spotlight
               </h2>
               <p className="text-lg text-slate-600 dark:text-slate-400">
-                Meet the incredible sisters building independent futures.
+                Meet builders creating independent futures.
               </p>
             </div>
             
@@ -760,7 +760,7 @@ export function HomeView({ setCurrentView, setCircleTab, members }: HomeViewProp
 
         <div className="relative mx-auto max-w-4xl space-y-4 sm:space-y-6">
           <h2 className="text-xl sm:text-3xl lg:text-4xl font-heading font-extrabold leading-snug sm:leading-tight text-white">
-            We are more than a platform. We are a <span className="text-accent italic">movement</span> of sisters building financially sovereign, unstoppable futures.
+            We are more than a platform. We are a <span className="text-accent italic">community</span> of women building businesses, independence, and opportunity for others.
           </h2>
           <p className="mx-auto max-w-2xl text-[10px] sm:text-xs md:text-sm text-white/80 leading-relaxed px-2">
             Whether you are launching your startup in Lagos, polishing your software skills in Kigali, or organizing cooperative agriculture in Nairobi, BIG is your safe, powerful ecosystem.

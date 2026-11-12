@@ -88,20 +88,20 @@ export function GoalTrackerView({ currentUser, addPoints }: GoalTrackerViewProps
         <div className="inline-flex items-center justify-center p-3 bg-secondary/10 rounded-full mb-4">
           <Target className="h-8 w-8 text-secondary" />
         </div>
-        <h1 className="text-3xl font-black text-primary uppercase tracking-tight">Accountability Tracker</h1>
-        <p className="text-slate-500 mt-2 max-w-xl mx-auto">Set your intentions, share Saturday standups, and cheer on your sisters as we achieve our goals together.</p>
+        <h1 className="text-3xl font-black text-primary uppercase tracking-tight">Builder accountability</h1>
+        <p className="text-slate-500 mt-2 max-w-xl mx-auto">Choose a clear next step, share your progress, and keep building with accountability.</p>
       </div>
 
       <div className="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm mb-10">
         <h3 className="text-sm font-black uppercase tracking-widest text-primary mb-4 flex items-center gap-2">
-          <Plus className="h-4 w-4 text-secondary" /> Declare a New Goal
+          <Plus className="h-4 w-4 text-secondary" /> Set a building goal
         </h3>
         <form onSubmit={handleAddGoal} className="flex flex-col md:flex-row gap-4">
           <input 
             type="text" 
             value={newGoal}
             onChange={(e) => setNewGoal(e.target.value)}
-            placeholder="What will you achieve?" 
+            placeholder="What is your next clear step?" 
             className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-secondary focus:ring-2 focus:ring-secondary/20"
           />
           <select 
